@@ -1,0 +1,4 @@
+periodic
+period
+*.o
+bin/
