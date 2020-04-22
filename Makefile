@@ -2,18 +2,19 @@ CC=gcc
 CFLAGS=-Wall -std=c99 -g
 LDFLAGS=-g
 BIN_DIR=./bin/
-SRC=$(BIN_DIR)now $(BIN_DIR)when
+SRC_DIR=./src/
+BIN:=$(patsubst $(SRC_DIR)%.c,$(BIN_DIR)%,$(wildcard $(SRC_DIR)*.c))
 
-ALL: $(SRC)
+ALL: $(BIN)
 
 $(BIN_DIR)%: %.o
-	$(CC) $(LDFLAGS) -o $@ $<
+	$(CC) $(LDFLAGS) -o $(SRC_DIR)$@ $<
 
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $<
+%.o: $(SRC_DIR)%.c
+	$(CC) $(CFLAGS) -o $(SRC_DIR)$@ -c $<
 
 clean:
-	rm -rf *.o
+	rm -rf $(SRC_DIR)*.o
 
 mrproper: clean
 	rm -rf ./bin/*
