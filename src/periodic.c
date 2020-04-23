@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  FILE *fd = fopen("./tmp/period.pid",'r');
+  FILE *fd = fopen("./tmp/period.pid","r");
 
   if (fd == NULL) {
     perror("fopen"); 
