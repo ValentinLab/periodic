@@ -2,9 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define SCRIPT_USAGE "when N\n"
-
-#define EXIT_FAILURE 1
+#define SCRIPT_USAGE "Usage: when N\n"
 
 int main(int argc, char **argv) {
   // Check arguments number
