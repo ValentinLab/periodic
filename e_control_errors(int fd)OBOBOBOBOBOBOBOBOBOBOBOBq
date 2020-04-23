@@ -1,0 +1,674 @@
+OPEN(2)                                         Linux Programmer's Manual                                        OPEN(2)
+
+NNAAMMEE
+       open, openat, creat - open and possibly create a file
+
+SSYYNNOOPPSSIISS
+       ##iinncclluuddee <<ssyyss//ttyyppeess..hh>>
+       ##iinncclluuddee <<ssyyss//ssttaatt..hh>>
+       ##iinncclluuddee <<ffccnnttll..hh>>
+
+       iinntt ooppeenn((ccoonnsstt cchhaarr **_p_a_t_h_n_a_m_e,, iinntt _f_l_a_g_s));;
+       iinntt ooppeenn((ccoonnsstt cchhaarr **_p_a_t_h_n_a_m_e,, iinntt _f_l_a_g_s,, mmooddee__tt _m_o_d_e));;
+
+       iinntt ccrreeaatt((ccoonnsstt cchhaarr **_p_a_t_h_n_a_m_e,, mmooddee__tt _m_o_d_e));;
+
+       iinntt ooppeennaatt((iinntt _d_i_r_f_d,, ccoonnsstt cchhaarr **_p_a_t_h_n_a_m_e,, iinntt _f_l_a_g_s));;
+       iinntt ooppeennaatt((iinntt _d_i_r_f_d,, ccoonnsstt cchhaarr **_p_a_t_h_n_a_m_e,, iinntt _f_l_a_g_s,, mmooddee__tt _m_o_d_e));;
+
+   Feature Test Macro Requirements for glibc (see ffeeaattuurree__tteesstt__mmaaccrrooss(7)):
+
+       ooppeennaatt():
+           Since glibc 2.10:
+               _POSIX_C_SOURCE >= 200809L
+           Before glibc 2.10:
+               _ATFILE_SOURCE
+
+DDEESSCCRRIIPPTTIIOONN
+       The  ooppeenn() system call opens the file specified by _p_a_t_h_n_a_m_e. If the specified file does not exist, it may optio‐
+       nally (if OO__CCRREEAATT is specified in _f_l_a_g_s) be created by ooppeenn().
+
+       The return value of ooppeenn() is a file descriptor, a small, nonnegative integer that is used in  subsequent  system
+       calls  (rreeaadd(2), wwrriittee(2), llsseeeekk(2), ffccnnttll(2), etc.) to refer to the open file. The file descriptor returned by a
+       successful call will be the lowest-numbered file descriptor not currently open for the process.
+
+       By default, the new file descriptor is set to remain open across an eexxeeccvvee(2) (i.e., the FFDD__CCLLOOEEXXEECC file descrip‐
+       tor flag described in ffccnnttll(2) is initially disabled); the OO__CCLLOOEEXXEECC flag, described below, can be used to change
+       this default. The file offset is set to the beginning of the file (see llsseeeekk(2)).
+
+       A call to ooppeenn() creates a new _o_p_e_n _f_i_l_e _d_e_s_c_r_i_p_t_i_o_n, an entry in the system-wide table of open files.  The  open
+       file  description records the file offset and the file status flags (see below). A file descriptor is a reference
+       to an open file description; this reference is unaffected if _p_a_t_h_n_a_m_e is subsequently removed or modified to  re‐
+       fer to a different file. For further details on open file descriptions, see NOTES.
+
+       The  argument  _f_l_a_g_s must include one of the following _a_c_c_e_s_s _m_o_d_e_s: OO__RRDDOONNLLYY, OO__WWRROONNLLYY, or OO__RRDDWWRR. These request
+       opening the file read-only, write-only, or read/write, respectively.
+
+       In addition, zero or more file creation flags and file status flags can be bitwise-_o_r'd in _f_l_a_g_s. The _f_i_l_e  _c_r_e_a_‐
+       _t_i_o_n  _f_l_a_g_s  are  OO__CCLLOOEEXXEECC, OO__CCRREEAATT, OO__DDIIRREECCTTOORRYY, OO__EEXXCCLL, OO__NNOOCCTTTTYY, OO__NNOOFFOOLLLLOOWW, OO__TTMMPPFFIILLEE, and OO__TTRRUUNNCC. The _f_i_l_e
+       _s_t_a_t_u_s _f_l_a_g_s are all of the remaining flags listed below. The distinction between these two groups  of  flags  is
+       that  the  file creation flags affect the semantics of the open operation itself, while the file status flags af‐
+       fect the semantics of subsequent I/O operations. The file status flags can be retrieved and (in some cases) modi‐
+       fied; see ffccnnttll(2) for details.
+
+       The full list of file creation flags and file status flags is as follows:
+
+       OO__AAPPPPEENNDD
+              The  file  is opened in append mode. Before each wwrriittee(2), the file offset is positioned at the end of the
+              file, as if with llsseeeekk(2). The modification of the file offset and the write operation are performed as  a
+              single atomic step.
+
+              OO__AAPPPPEENNDD may lead to corrupted files on NFS filesystems if more than one process appends data to a file at
+              once. This is because NFS does not support appending to a file, so the client kernel has to  simulate  it,
+              which can't be done without a race condition.
+
+       OO__AASSYYNNCC
+              Enable  signal-driven I/O: generate a signal (SSIIGGIIOO by default, but this can be changed via ffccnnttll(2)) when
+              input or output becomes possible on this file descriptor. This feature is available  only  for  terminals,
+              pseudoterminals,  sockets,  and  (since  Linux 2.6) pipes and FIFOs. See ffccnnttll(2) for further details. See
+              also BUGS, below.
+
+       OO__CCLLOOEEXXEECC (since Linux 2.6.23)
+              Enable the close-on-exec flag for the new file descriptor. Specifying this flag permits a program to avoid
+              additional ffccnnttll(2) FF__SSEETTFFDD operations to set the FFDD__CCLLOOEEXXEECC flag.
+
+              Note  that  the  use  of  this  flag is essential in some multithreaded programs, because using a separate
+              ffccnnttll(2) FF__SSEETTFFDD operation to set the FFDD__CCLLOOEEXXEECC flag does not suffice to avoid race conditions where  one
+              thread  opens a file descriptor and attempts to set its close-on-exec flag using ffccnnttll(2) at the same time
+              as another thread does a ffoorrkk(2) plus eexxeeccvvee(2). Depending on the order of execution, the race may lead to
+              the  file  descriptor returned by ooppeenn() being unintentionally leaked to the program executed by the child
+              process created by ffoorrkk(2). (This kind of race is in principle possible for any system call that creates a
+              file  descriptor  whose  close-on-exec flag should be set, and various other Linux system calls provide an
+              equivalent of the OO__CCLLOOEEXXEECC flag to deal with this problem.)
+
+       OO__CCRREEAATT
+              If _p_a_t_h_n_a_m_e does not exist, create it as a regular file.
+
+              The owner (user ID) of the new file is set to the effective user ID of the process.
+
+              The group ownership (group ID) of the new file is set either to the effective  group  ID  of  the  process
+              (System  V  semantics)  or to the group ID of the parent directory (BSD semantics). On Linux, the behavior
+              depends on whether the set-group-ID mode bit is set on the parent directory: if that bit is set, then  BSD
+              semantics  apply;  otherwise, System V semantics apply. For some filesystems, the behavior also depends on
+              the _b_s_d_g_r_o_u_p_s and _s_y_s_v_g_r_o_u_p_s mount options described in mmoouunntt(8)).
+
+              The _m_o_d_e argument specifies the file mode bits be applied when a new file is created. This  argument  must
+              be  supplied  when  OO__CCRREEAATT or OO__TTMMPPFFIILLEE is specified in _f_l_a_g_s; if neither OO__CCRREEAATT nor OO__TTMMPPFFIILLEE is speci‐
+              fied, then _m_o_d_e is ignored. The effective mode is modified by the process's _u_m_a_s_k in the usual way: in the
+              absence  of  a  default  ACL, the mode of the created file is _(_m_o_d_e _& _~_u_m_a_s_k_). Note that this mode applies
+              only to future accesses of the newly created file; the ooppeenn() call that creates a read-only file may  well
+              return a read/write file descriptor.
+
+              The following symbolic constants are provided for _m_o_d_e:
+
+              SS__IIRRWWXXUU  00700 user (file owner) has read, write, and execute permission
+
+              SS__IIRRUUSSRR  00400 user has read permission
+
+              SS__IIWWUUSSRR  00200 user has write permission
+
+              SS__IIXXUUSSRR  00100 user has execute permission
+
+              SS__IIRRWWXXGG  00070 group has read, write, and execute permission
+
+              SS__IIRRGGRRPP  00040 group has read permission
+
+              SS__IIWWGGRRPP  00020 group has write permission
+
+              SS__IIXXGGRRPP  00010 group has execute permission
+
+              SS__IIRRWWXXOO  00007 others have read, write, and execute permission
+
+              SS__IIRROOTTHH  00004 others have read permission
+
+              SS__IIWWOOTTHH  00002 others have write permission
+
+              SS__IIXXOOTTHH  00001 others have execute permission
+
+              According  to  POSIX,  the  effect when other bits are set in _m_o_d_e is unspecified. On Linux, the following
+              bits are also honored in _m_o_d_e:
+
+              SS__IISSUUIIDD  0004000 set-user-ID bit
+
+              SS__IISSGGIIDD  0002000 set-group-ID bit (see iinnooddee(7)).
+
+              SS__IISSVVTTXX  0001000 sticky bit (see iinnooddee(7)).
+
+       OO__DDIIRREECCTT (since Linux 2.4.10)
+              Try to minimize cache effects of the I/O to and from this file. In general this will degrade  performance,
+              but  it  is useful in special situations, such as when applications do their own caching. File I/O is done
+              directly to/from user-space buffers. The OO__DDIIRREECCTT flag on its own makes an effort to  transfer  data  syn‐
+              chronously,  but  does  not  give  the  guarantees of the OO__SSYYNNCC flag that data and necessary metadata are
+              transferred. To guarantee synchronous I/O, OO__SSYYNNCC must be used in addition to OO__DDIIRREECCTT.  See  NOTES  below
+              for further discussion.
+
+              A semantically similar (but deprecated) interface for block devices is described in rraaww(8).
+
+       OO__DDIIRREECCTTOORRYY
+              If  _p_a_t_h_n_a_m_e is not a directory, cause the open to fail. This flag was added in kernel version 2.1.126, to
+              avoid denial-of-service problems if ooppeennddiirr(3) is called on a FIFO or tape device.
+
+       OO__DDSSYYNNCC
+              Write operations on the file will complete according to the requirements of synchronized  I/O  _d_a_t_a  inte‐
+              grity completion.
+
+              By  the  time  wwrriittee(2) (and similar) return, the output data has been transferred to the underlying hard‐
+              ware, along with any file metadata that would be required to retrieve that  data  (i.e.,  as  though  each
+              wwrriittee(2) was followed by a call to ffddaattaassyynncc(2)). _S_e_e _N_O_T_E_S _b_e_l_o_w.
+
+       OO__EEXXCCLL Ensure  that  this call creates the file: if this flag is specified in conjunction with OO__CCRREEAATT, and _p_a_t_h_‐
+              _n_a_m_e already exists, then ooppeenn() fails with the error EEEEXXIISSTT.
+
+              When these two flags are specified, symbolic links are not followed: if _p_a_t_h_n_a_m_e is a symbolic link,  then
+              ooppeenn() fails regardless of where the symbolic link points.
+
+              In  general, the behavior of OO__EEXXCCLL is undefined if it is used without OO__CCRREEAATT. There is one exception: on
+              Linux 2.6 and later, OO__EEXXCCLL can be used without OO__CCRREEAATT if _p_a_t_h_n_a_m_e refers to a block device. If the block
+              device is in use by the system (e.g., mounted), ooppeenn() fails with the error EEBBUUSSYY.
+
+              On  NFS,  OO__EEXXCCLL  is  supported only when using NFSv3 or later on kernel 2.6 or later. In NFS environments
+              where OO__EEXXCCLL support is not provided, programs that rely on it for performing locking tasks will contain a
+              race  condition.  Portable programs that want to perform atomic file locking using a lockfile, and need to
+              avoid reliance on NFS support for OO__EEXXCCLL, can create a unique file on the same filesystem (e.g.,  incorpo‐
+              rating  hostname  and PID), and use lliinnkk(2) to make a link to the lockfile. If lliinnkk(2) returns 0, the lock
+              is successful. Otherwise, use ssttaatt(2) on the unique file to check if its link count has increased to 2, in
+              which case the lock is also successful.
+
+       OO__LLAARRGGEEFFIILLEE
+              (LFS)  Allow files whose sizes cannot be represented in an _o_f_f___t (but can be represented in an _o_f_f_6_4___t) to
+              be opened. The __LLAARRGGEEFFIILLEE6644__SSOOUURRCCEE macro must be defined (before including _a_n_y header files) in  order  to
+              obtain this definition. Setting the __FFIILLEE__OOFFFFSSEETT__BBIITTSS feature test macro to 64 (rather than using OO__LLAARRGGEE‐‐
+              FFIILLEE) is the preferred method of accessing large files on 32-bit systems (see ffeeaattuurree__tteesstt__mmaaccrrooss(7)).
+
+       OO__NNOOAATTIIMMEE (since Linux 2.6.8)
+              Do not update the file last access time (_s_t___a_t_i_m_e in the inode) when the file is rreeaadd(2).
+
+              This flag can be employed only if one of the following conditions is true:
+
+              *  The effective UID of the process matches the owner UID of the file.
+
+              *  The calling process has the CCAAPP__FFOOWWNNEERR capability in its user namespace and the owner UID of  the  file
+                 has a mapping in the namespace.
+
+              This  flag  is intended for use by indexing or backup programs, where its use can significantly reduce the
+              amount of disk activity. This flag may not be effective on all filesystems. One example is NFS, where  the
+              server maintains the access time.
+
+       OO__NNOOCCTTTTYY
+              If  _p_a_t_h_n_a_m_e  refers to a terminal device—see ttttyy(4)—it will not become the process's controlling terminal
+              even if the process does not have one.
+
+       OO__NNOOFFOOLLLLOOWW
+              If _p_a_t_h_n_a_m_e is a symbolic link, then the open fails, with the error EELLOOOOPP. Symbolic links in earlier  com‐
+              ponents  of the pathname will still be followed. (Note that the EELLOOOOPP error that can occur in this case is
+              indistinguishable from the case where an open fails because there are too many symbolic links found  while
+              resolving components in the prefix part of the pathname.)
+
+              This  flag  is a FreeBSD extension, which was added to Linux in version 2.1.126, and has subsequently been
+              standardized in POSIX.1-2008.
+
+              See also OO__PPAATTHH below.
+
+       OO__NNOONNBBLLOOCCKK or OO__NNDDEELLAAYY
+              When possible, the file is opened in nonblocking mode. Neither the ooppeenn() nor any  subsequent  I/O  opera‐
+              tions on the file descriptor which is returned will cause the calling process to wait.
+
+              Note that the setting of this flag has no effect on the operation of ppoollll(2), sseelleecctt(2), eeppoollll(7), and si‐
+              milar, since those interfaces merely inform the caller about whether a file descriptor is "ready", meaning
+              that an I/O operation performed on the file descriptor with the OO__NNOONNBBLLOOCCKK flag _c_l_e_a_r would not block.
+
+              Note that this flag has no effect for regular files and block devices; that is, I/O operations will (brie‐
+              fly) block when device activity is required, regardless of whether OO__NNOONNBBLLOOCCKK is set. Since OO__NNOONNBBLLOOCCKK se‐
+              mantics might eventually be implemented, applications should not depend upon blocking behavior when speci‐
+              fying this flag for regular files and block devices.
+
+              For the handling of FIFOs (named pipes), see also ffiiffoo(7). For a discussion of the effect of OO__NNOONNBBLLOOCCKK in
+              conjunction with mandatory file locks and with file leases, see ffccnnttll(2).
+
+       OO__PPAATTHH (since Linux 2.6.39)
+              Obtain  a file descriptor that can be used for two purposes: to indicate a location in the filesystem tree
+              and to perform operations that act purely at the file descriptor level. The file itself is not opened, and
+              other  file  operations  (e.g.,  rreeaadd(2), wwrriittee(2), ffcchhmmoodd(2), ffcchhoowwnn(2), ffggeettxxaattttrr(2), iiooccttll(2), mmmmaapp(2))
+              fail with the error EEBBAADDFF.
+
+              The following operations _c_a_n be performed on the resulting file descriptor:
+
+              *  cclloossee(2).
+
+              *  ffcchhddiirr(2), if the file descriptor refers to a directory (since Linux 3.5).
+
+              *  ffssttaatt(2) (since Linux 3.6).
+
+              *  ffssttaattffss(2) (since Linux 3.12).
+
+              *  Duplicating the file descriptor (dduupp(2), ffccnnttll(2) FF__DDUUPPFFDD, etc.).
+
+              *  Getting and setting file descriptor flags (ffccnnttll(2) FF__GGEETTFFDD and FF__SSEETTFFDD).
+
+              *  Retrieving open file status flags using the ffccnnttll(2) FF__GGEETTFFLL operation: the returned flags will include
+                 the bit OO__PPAATTHH.
+
+              *  Passing  the file descriptor as the _d_i_r_f_d argument of ooppeennaatt() and the other "*at()" system calls. This
+                 includes lliinnkkaatt(2) with AATT__EEMMPPTTYY__PPAATTHH (or via procfs using AATT__SSYYMMLLIINNKK__FFOOLLLLOOWW) even if the file is not a
+                 directory.
+
+              *  Passing the file descriptor to another process via a UNIX domain socket (see SSCCMM__RRIIGGHHTTSS in uunniixx(7)).
+
+              When  OO__PPAATTHH  is specified in _f_l_a_g_s, flag bits other than OO__CCLLOOEEXXEECC, OO__DDIIRREECCTTOORRYY, and OO__NNOOFFOOLLLLOOWW are igno‐
+              red.
+
+              Opening a file or directory with the OO__PPAATTHH flag requires no permissions on the object  itself  (but  does
+              require  execute permission on the directories in the path prefix). Depending on the subsequent operation,
+              a check for suitable file permissions may be performed (e.g., ffcchhddiirr(2) requires execute permission on the
+              directory referred to by its file descriptor argument). By contrast, obtaining a reference to a filesystem
+              object by opening it with the OO__RRDDOONNLLYY flag requires that the caller have read permission on  the  object,
+              even when the subsequent operation (e.g., ffcchhddiirr(2), ffssttaatt(2)) does not require read permission on the ob‐
+              ject.
+
+              If _p_a_t_h_n_a_m_e is a symbolic link and the OO__NNOOFFOOLLLLOOWW flag is also specified, then the  call  returns  a  file
+              descriptor referring to the symbolic link. This file descriptor can be used as the _d_i_r_f_d argument in calls
+              to ffcchhoowwnnaatt(2), ffssttaattaatt(2), lliinnkkaatt(2), and rreeaaddlliinnkkaatt(2) with an empty pathname to have the calls  operate
+              on the symbolic link.
+
+              If  _p_a_t_h_n_a_m_e refers to an automount point that has not yet been triggered, so no other filesystem is moun‐
+              ted on it, then the call returns a file descriptor referring to the automount directory without triggering
+              a  mount.  ffssttaattffss(2)  can  then  be  used  to determine if it is, in fact, an untriggered automount point
+              (..ff__ttyyppee ==== AAUUTTOOFFSS__SSUUPPEERR__MMAAGGIICC).
+
+              One use of OO__PPAATTHH for regular files is to provide the equivalent of POSIX.1's OO__EEXXEECC  functionality.  This
+              permits  us  to open a file for which we have execute permission but not read permission, and then execute
+              that file, with steps something like the following:
+
+                  char buf[PATH_MAX];
+                  fd = open("some_prog", O_PATH);
+                  snprintf(buf, PATH_MAX, "/proc/self/fd/%d", fd);
+                  execl(buf, "some_prog", (char *) NULL);
+
+              An OO__PPAATTHH file descriptor can also be passed as the argument of ffeexxeeccvvee(3).
+
+       OO__SSYYNNCC Write operations on the file will complete according to the requirements of synchronized  I/O  _f_i_l_e  inte‐
+              grity completion (by contrast with the synchronized I/O _d_a_t_a integrity completion provided by OO__DDSSYYNNCC.)
+
+              By  the  time wwrriittee(2) (or similar) returns, the output data and associated file metadata have been trans‐
+              ferred to the underlying hardware (i.e., as though each wwrriittee(2) was followed by a call to ffssyynncc(2)).  _S_e_e
+              _N_O_T_E_S _b_e_l_o_w.
+
+       OO__TTMMPPFFIILLEE (since Linux 3.11)
+              Create  an  unnamed  temporary regular file. The _p_a_t_h_n_a_m_e argument specifies a directory; an unnamed inode
+              will be created in that directory's filesystem. Anything written to the resulting file will be  lost  when
+              the last file descriptor is closed, unless the file is given a name.
+
+              OO__TTMMPPFFIILLEE  must be specified with one of OO__RRDDWWRR or OO__WWRROONNLLYY and, optionally, OO__EEXXCCLL. If OO__EEXXCCLL is not spe‐
+              cified, then lliinnkkaatt(2) can be used to link the temporary file into the filesystem,  making  it  permanent,
+              using code like the following:
+
+                  char path[PATH_MAX];
+                  fd = open("/path/to/dir", O_TMPFILE | O_RDWR,
+                                          S_IRUSR | S_IWUSR);
+
+                  /* File I/O on 'fd'... */
+
+                  snprintf(path, PATH_MAX,  "/proc/self/fd/%d", fd);
+                  linkat(AT_FDCWD, path, AT_FDCWD, "/path/for/file",
+                                          AT_SYMLINK_FOLLOW);
+
+              In this case, the ooppeenn() _m_o_d_e argument determines the file permission mode, as with OO__CCRREEAATT.
+
+              Specifying OO__EEXXCCLL in conjunction with OO__TTMMPPFFIILLEE prevents a temporary file from being linked into the file‐
+              system in the above manner. (Note that the meaning of OO__EEXXCCLL in this case is different from the meaning of
+              OO__EEXXCCLL otherwise.)
+
+              There are two main use cases for OO__TTMMPPFFIILLEE:
+
+              *  Improved ttmmppffiillee(3) functionality: race-free creation of temporary files that (1) are automatically de‐
+                 leted when closed; (2) can never be reached via any pathname; (3) are not subject to  symlink  attacks;
+                 and (4) do not require the caller to devise unique names.
+
+              *  Creating a file that is initially invisible, which is then populated with data and adjusted to have ap‐
+                 propriate filesystem attributes (ffcchhoowwnn(2), ffcchhmmoodd(2), ffsseettxxaattttrr(2), etc.) before being atomically lin‐
+                 ked into the filesystem in a fully formed state (using lliinnkkaatt(2) as described above).
+
+              OO__TTMMPPFFIILLEE  requires  support by the underlying filesystem; only a subset of Linux filesystems provide that
+              support. In the initial implementation, support was provided in the ext2,  ext3,  ext4,  UDF,  Minix,  and
+              shmem filesystems. Support for other filesystems has subsequently been added as follows: XFS (Linux 3.15);
+              Btrfs (Linux 3.16); F2FS (Linux 3.16); and ubifs (Linux 4.9)
+
+       OO__TTRRUUNNCC
+              If the file already exists and is a regular file and the access mode allows writing (i.e.,  is  OO__RRDDWWRR  or
+              OO__WWRROONNLLYY)  it  will  be  truncated to length 0. If the file is a FIFO or terminal device file, the OO__TTRRUUNNCC
+              flag is ignored. Otherwise, the effect of OO__TTRRUUNNCC is unspecified.
+
+   ccrreeaatt(())
+       A call to ccrreeaatt() is equivalent to calling ooppeenn() with _f_l_a_g_s equal to OO__CCRREEAATT||OO__WWRROONNLLYY||OO__TTRRUUNNCC.
+
+   ooppeennaatt(())
+       The ooppeennaatt() system call operates in exactly the same way as ooppeenn(), except for the differences described here.
+
+       If the pathname given in _p_a_t_h_n_a_m_e is relative, then it is interpreted relative to the directory  referred  to  by
+       the  file  descriptor  _d_i_r_f_d (rather than relative to the current working directory of the calling process, as is
+       done by ooppeenn() for a relative pathname).
+
+       If _p_a_t_h_n_a_m_e is relative and _d_i_r_f_d is the special value AATT__FFDDCCWWDD, then _p_a_t_h_n_a_m_e is  interpreted  relative  to  the
+       current working directory of the calling process (like ooppeenn()).
+
+       If _p_a_t_h_n_a_m_e is absolute, then _d_i_r_f_d is ignored.
+
+RREETTUURRNN VVAALLUUEE
+       ooppeenn(), ooppeennaatt(), and ccrreeaatt() return the new file descriptor, or -1 if an error occurred (in which case, _e_r_r_n_o is
+       set appropriately).
+
+EERRRROORRSS
+       ooppeenn(), ooppeennaatt(), and ccrreeaatt() can fail with the following errors:
+
+       EEAACCCCEESS The requested access to the file is not allowed, or search permission is denied for one of the directories
+              in  the path prefix of _p_a_t_h_n_a_m_e, or the file did not exist yet and write access to the parent directory is
+              not allowed. (See also ppaatthh__rreessoolluuttiioonn(7).)
+
+       EEDDQQUUOOTT Where OO__CCRREEAATT is specified, the file does not exist, and the user's quota of disk blocks or inodes on  the
+              filesystem has been exhausted.
+
+       EEEEXXIISSTT _p_a_t_h_n_a_m_e already exists and OO__CCRREEAATT and OO__EEXXCCLL were used.
+
+       EEFFAAUULLTT _p_a_t_h_n_a_m_e points outside your accessible address space.
+
+       EEFFBBIIGG  See EEOOVVEERRFFLLOOWW.
+
+       EEIINNTTRR  While  blocked  waiting to complete an open of a slow device (e.g., a FIFO; see ffiiffoo(7)), the call was in‐
+              terrupted by a signal handler; see ssiiggnnaall(7).
+
+       EEIINNVVAALL The filesystem does not support the OO__DDIIRREECCTT flag. See NNOOTTEESS for more information.
+
+       EEIINNVVAALL Invalid value in _f_l_a_g_s.
+
+       EEIINNVVAALL OO__TTMMPPFFIILLEE was specified in _f_l_a_g_s, but neither OO__WWRROONNLLYY nor OO__RRDDWWRR was specified.
+
+       EEIINNVVAALL OO__CCRREEAATT was specified in _f_l_a_g_s and the final component ("basename") of the new file's _p_a_t_h_n_a_m_e is  invalid
+              (e.g., it contains characters not permitted by the underlying filesystem).
+
+       EEIISSDDIIRR _p_a_t_h_n_a_m_e  refers  to a directory and the access requested involved writing (that is, OO__WWRROONNLLYY or OO__RRDDWWRR is
+              set).
+
+       EEIISSDDIIRR _p_a_t_h_n_a_m_e refers to an existing directory, OO__TTMMPPFFIILLEE and one of OO__WWRROONNLLYY or OO__RRDDWWRR were specified in _f_l_a_g_s,
+              but this kernel version does not provide the OO__TTMMPPFFIILLEE functionality.
+
+       EELLOOOOPP  Too many symbolic links were encountered in resolving _p_a_t_h_n_a_m_e.
+
+       EELLOOOOPP  _p_a_t_h_n_a_m_e was a symbolic link, and _f_l_a_g_s specified OO__NNOOFFOOLLLLOOWW but not OO__PPAATTHH.
+
+       EEMMFFIILLEE The per-process limit on the number of open file descriptors has been reached (see the description of RRLLII‐‐
+              MMIITT__NNOOFFIILLEE in ggeettrrlliimmiitt(2)).
+
+       EENNAAMMEETTOOOOLLOONNGG
+              _p_a_t_h_n_a_m_e was too long.
+
+       EENNFFIILLEE The system-wide limit on the total number of open files has been reached.
+
+       EENNOODDEEVV _p_a_t_h_n_a_m_e refers to a device special file and no corresponding device exists. (This is a Linux kernel  bug;
+              in this situation EENNXXIIOO must be returned.)
+
+       EENNOOEENNTT OO__CCRREEAATT is not set and the named file does not exist.
+
+       EENNOOEENNTT A directory component in _p_a_t_h_n_a_m_e does not exist or is a dangling symbolic link.
+
+       EENNOOEENNTT _p_a_t_h_n_a_m_e  refers  to  a  nonexistent  directory, OO__TTMMPPFFIILLEE and one of OO__WWRROONNLLYY or OO__RRDDWWRR were specified in
+              _f_l_a_g_s, but this kernel version does not provide the OO__TTMMPPFFIILLEE functionality.
+
+       EENNOOMMEEMM The named file is a FIFO, but memory for the FIFO buffer can't be allocated because the per-user hard  li‐
+              mit on memory allocation for pipes has been reached and the caller is not privileged; see ppiippee(7).
+
+       EENNOOMMEEMM Insufficient kernel memory was available.
+
+       EENNOOSSPPCC _p_a_t_h_n_a_m_e was to be created but the device containing _p_a_t_h_n_a_m_e has no room for the new file.
+
+       EENNOOTTDDIIRR
+              A component used as a directory in _p_a_t_h_n_a_m_e is not, in fact, a directory, or OO__DDIIRREECCTTOORRYY was specified and
+              _p_a_t_h_n_a_m_e was not a directory.
+
+       EENNXXIIOO  OO__NNOONNBBLLOOCCKK | OO__WWRROONNLLYY is set, the named file is a FIFO, and no process has the FIFO open for reading.
+
+       EENNXXIIOO  The file is a device special file and no corresponding device exists.
+
+       EENNXXIIOO  The file is a UNIX domain socket.
+
+       EEOOPPNNOOTTSSUUPPPP
+              The filesystem containing _p_a_t_h_n_a_m_e does not support OO__TTMMPPFFIILLEE.
+
+       EEOOVVEERRFFLLOOWW
+              _p_a_t_h_n_a_m_e refers to a regular file that is too large to be opened. The usual scenario here is that  an  ap‐
+              plication compiled on a 32-bit platform without _-_D___F_I_L_E___O_F_F_S_E_T___B_I_T_S_=_6_4 tried to open a file whose size ex‐
+              ceeds _(_1_<_<_3_1_)_-_1 bytes; see also OO__LLAARRGGEEFFIILLEE above. This is the error specified by POSIX.1; in kernels  be‐
+              fore 2.6.24, Linux gave the error EEFFBBIIGG for this case.
+
+       EEPPEERRMM  The  OO__NNOOAATTIIMMEE  flag was specified, but the effective user ID of the caller did not match the owner of the
+              file and the caller was not privileged.
+
+       EEPPEERRMM  The operation was prevented by a file seal; see ffccnnttll(2).
+
+       EERROOFFSS  _p_a_t_h_n_a_m_e refers to a file on a read-only filesystem and write access was requested.
+
+       EETTXXTTBBSSYY
+              _p_a_t_h_n_a_m_e refers to an executable image which is currently being executed and write access was requested.
+
+       EETTXXTTBBSSYY
+              _p_a_t_h_n_a_m_e refers to a file that is currently in use as a swap file, and the OO__TTRRUUNNCC flag was specified.
+
+       EETTXXTTBBSSYY
+              _p_a_t_h_n_a_m_e refers to a file that is currently being read by the kernel (e.g. for  module/firmware  loading),
+              and write access was requested.
+
+       EEWWOOUULLDDBBLLOOCCKK
+              The OO__NNOONNBBLLOOCCKK flag was specified, and an incompatible lease was held on the file (see ffccnnttll(2)).
+
+       The following additional errors can occur for ooppeennaatt():
+
+       EEBBAADDFF  _d_i_r_f_d is not a valid file descriptor.
+
+       EENNOOTTDDIIRR
+              _p_a_t_h_n_a_m_e is a relative pathname and _d_i_r_f_d is a file descriptor referring to a file other than a directory.
+
+VVEERRSSIIOONNSS
+       ooppeennaatt() was added to Linux in kernel 2.6.16; library support was added to glibc in version 2.4.
+
+CCOONNFFOORRMMIINNGG TTOO
+       ooppeenn(), ccrreeaatt() SVr4, 4.3BSD, POSIX.1-2001, POSIX.1-2008.
+
+       ooppeennaatt(): POSIX.1-2008.
+
+       The  OO__DDIIRREECCTT,  OO__NNOOAATTIIMMEE,  OO__PPAATTHH, and OO__TTMMPPFFIILLEE flags are Linux-specific. One must define __GGNNUU__SSOOUURRCCEE to obtain
+       their definitions.
+
+       The OO__CCLLOOEEXXEECC, OO__DDIIRREECCTTOORRYY, and OO__NNOOFFOOLLLLOOWW flags are not specified in POSIX.1-2001,  but  are  specified  in  PO‐
+       SIX.1-2008.  Since  glibc  2.12, one can obtain their definitions by defining either __PPOOSSIIXX__CC__SSOOUURRCCEE with a value
+       greater than or equal to 200809L or __XXOOPPEENN__SSOOUURRCCEE with a value greater than or equal to 700. In  glibc  2.11  and
+       earlier, one obtains the definitions by defining __GGNNUU__SSOOUURRCCEE.
+
+       As  noted  in ffeeaattuurree__tteesstt__mmaaccrrooss(7), feature test macros such as __PPOOSSIIXX__CC__SSOOUURRCCEE, __XXOOPPEENN__SSOOUURRCCEE, and __GGNNUU__SSOOUURRCCEE
+       must be defined before including _a_n_y header files.
+
+NNOOTTEESS
+       Under Linux, the OO__NNOONNBBLLOOCCKK flag is sometimes used in cases where one wants to open but does not necessarily have
+       the  intention to read or write. For example, this may be used to open a device in order to get a file descriptor
+       for use with iiooccttll(2).
+
+       The (undefined) effect of OO__RRDDOONNLLYY || OO__TTRRUUNNCC varies among implementations. On many systems the file  is  actually
+       truncated.
+
+       Note that ooppeenn() can open device special files, but ccrreeaatt() cannot create them; use mmkknnoodd(2) instead.
+
+       If the file is newly created, its _s_t___a_t_i_m_e, _s_t___c_t_i_m_e, _s_t___m_t_i_m_e fields (respectively, time of last access, time of
+       last status change, and time of last modification; see ssttaatt(2)) are set to the  current  time,  and  so  are  the
+       _s_t___c_t_i_m_e  and  _s_t___m_t_i_m_e fields of the parent directory. Otherwise, if the file is modified because of the OO__TTRRUUNNCC
+       flag, its _s_t___c_t_i_m_e and _s_t___m_t_i_m_e fields are set to the current time.
+
+       The files in the _/_p_r_o_c_/_[_p_i_d_]_/_f_d directory show the open file descriptors of the process with  the  PID  _p_i_d.  The
+       files  in  the  _/_p_r_o_c_/_[_p_i_d_]_/_f_d_i_n_f_o directory show even more information about these file descriptors. See pprroocc(5)
+       for further details of both of these directories.
+
+       The Linux header file <<aassmm//ffccnnttll..hh>> doesn't define OO__AASSYYNNCC; the (BSD-derived) FFAASSYYNNCC synonym is defined instead.
+
+   OOppeenn ffiillee ddeessccrriippttiioonnss
+       The term open file description is the one used by POSIX to refer to the entries in the system-wide table of  open
+       files.  In  other contexts, this object is variously also called an "open file object", a "file handle", an "open
+       file table entry", or—in kernel-developer parlance—a _s_t_r_u_c_t _f_i_l_e.
+
+       When a file descriptor is duplicated (using dduupp(2) or similar), the duplicate refers to the same open  file  des‐
+       cription  as  the  original  file descriptor, and the two file descriptors consequently share the file offset and
+       file status flags. Such sharing can also occur between processes: a child process created  via  ffoorrkk(2)  inherits
+       duplicates of its parent's file descriptors, and those duplicates refer to the same open file descriptions.
+
+       Each  ooppeenn()  of  a  file creates a new open file description; thus, there may be multiple open file descriptions
+       corresponding to a file inode.
+
+       On Linux, one can use the kkccmmpp(2) KKCCMMPP__FFIILLEE operation to test whether two file descriptors (in the  same  process
+       or in two different processes) refer to the same open file description.
+
+   SSyynncchhrroonniizzeedd II//OO
+       The  POSIX.1-2008  "synchronized  I/O" option specifies different variants of synchronized I/O, and specifies the
+       ooppeenn() flags OO__SSYYNNCC, OO__DDSSYYNNCC, and OO__RRSSYYNNCC for controlling the behavior. Regardless of whether  an  implementation
+       supports this option, it must at least support the use of OO__SSYYNNCC for regular files.
+
+       Linux  implements  OO__SSYYNNCC  and  OO__DDSSYYNNCC, but not OO__RRSSYYNNCC. Somewhat incorrectly, glibc defines OO__RRSSYYNNCC to have the
+       same value as OO__SSYYNNCC. (OO__RRSSYYNNCC is defined in the Linux header file _<_a_s_m_/_f_c_n_t_l_._h_> on HP PA-RISC,  but  it  is  not
+       used.)
+
+       OO__SSYYNNCC  provides synchronized I/O _f_i_l_e integrity completion, meaning write operations will flush data and all as‐
+       sociated metadata to the underlying hardware. OO__DDSSYYNNCC provides synchronized I/O _d_a_t_a integrity  completion,  mea‐
+       ning  write  operations will flush data to the underlying hardware, but will only flush metadata updates that are
+       required to allow a subsequent read operation to complete successfully. Data integrity completion can reduce  the
+       number  of  disk  operations  that are required for applications that don't need the guarantees of file integrity
+       completion.
+
+       To understand the difference between the two types of completion, consider two pieces of file metadata: the  file
+       last  modification timestamp (_s_t___m_t_i_m_e) and the file length. All write operations will update the last file modi‐
+       fication timestamp, but only writes that add data to the end of the file will change the file  length.  The  last
+       modification  timestamp is not needed to ensure that a read completes successfully, but the file length is. Thus,
+       OO__DDSSYYNNCC would only guarantee to flush updates to the file length metadata (whereas OO__SSYYNNCC would also always flush
+       the last modification timestamp metadata).
+
+       Before  Linux  2.6.33,  Linux implemented only the OO__SSYYNNCC flag for ooppeenn(). However, when that flag was specified,
+       most filesystems actually provided the equivalent of synchronized I/O _d_a_t_a integrity completion (i.e., OO__SSYYNNCC was
+       actually implemented as the equivalent of OO__DDSSYYNNCC).
+
+       Since  Linux 2.6.33, proper OO__SSYYNNCC support is provided. However, to ensure backward binary compatibility, OO__DDSSYYNNCC
+       was defined with the same value as the historical OO__SSYYNNCC, and OO__SSYYNNCC was defined as a new  (two-bit)  flag  value
+       that  includes  the  OO__DDSSYYNNCC flag value. This ensures that applications compiled against new headers get at least
+       OO__DDSSYYNNCC semantics on pre-2.6.33 kernels.
+
+   CC lliibbrraarryy//kkeerrnneell ddiiffffeerreenncceess
+       Since version 2.26, the glibc wrapper function for ooppeenn() employs the ooppeennaatt() system call, rather than the  ker‐
+       nel's ooppeenn() system call. For certain architectures, this is also true in glibc versions before 2.26.
+
+   NNFFSS
+       There are many infelicities in the protocol underlying NFS, affecting amongst others OO__SSYYNNCC and OO__NNDDEELLAAYY.
+
+       On  NFS  filesystems  with UID mapping enabled, ooppeenn() may return a file descriptor but, for example, rreeaadd(2) re‐
+       quests are denied with EEAACCCCEESS. This is because the client performs ooppeenn() by checking the  permissions,  but  UID
+       mapping is performed by the server upon read and write requests.
+
+   FFIIFFOOss
+       Opening the read or write end of a FIFO blocks until the other end is also opened (by another process or thread).
+       See ffiiffoo(7) for further details.
+
+   FFiillee aacccceessss mmooddee
+       Unlike the other values that can be specified in _f_l_a_g_s, the _a_c_c_e_s_s _m_o_d_e values OO__RRDDOONNLLYY, OO__WWRROONNLLYY, and OO__RRDDWWRR  do
+       not specify individual bits. Rather, they define the low order two bits of _f_l_a_g_s, and are defined respectively as
+       0, 1, and 2. In other words, the combination OO__RRDDOONNLLYY || OO__WWRROONNLLYY is a logical error, and certainly does not  have
+       the same meaning as OO__RRDDWWRR.
+
+       Linux reserves the special, nonstandard access mode 3 (binary 11) in _f_l_a_g_s to mean: check for read and write per‐
+       mission on the file and return a file descriptor that can't be used for reading or writing. This nonstandard  ac‐
+       cess  mode  is used by some Linux drivers to return a file descriptor that is to be used only for device-specific
+       iiooccttll(2) operations.
+
+   RRaattiioonnaallee ffoorr ooppeennaatt(()) aanndd ootthheerr ddiirreeccttoorryy ffiillee ddeessccrriippttoorr AAPPIIss
+       ooppeennaatt() and the other system calls and library functions that take a directory file descriptor  argument  (i.e.,
+       eexxeeccvveeaatt(2), ffaacccceessssaatt(2), ffaannoottiiffyy__mmaarrkk(2), ffcchhmmooddaatt(2), ffcchhoowwnnaatt(2), ffssttaattaatt(2), ffuuttiimmeessaatt(2), lliinnkkaatt(2), mmkkddii‐‐
+       rraatt(2), mmkknnooddaatt(2), nnaammee__ttoo__hhaannddllee__aatt(2), rreeaaddlliinnkkaatt(2), rreennaammeeaatt(2), ssttaattxx(2), ssyymmlliinnkkaatt(2),  uunnlliinnkkaatt(2),  uuttii‐‐
+       mmeennssaatt(2),  mmkkffiiffooaatt(3),  and  ssccaannddiirraatt(3))  address  two problems with the older interfaces that preceded them.
+       Here, the explanation is in terms of the ooppeennaatt() call, but the rationale is analogous for the other interfaces.
+
+       First, ooppeennaatt() allows an application to avoid race conditions that could occur when using ooppeenn() to  open  files
+       in  directories  other  than  the current working directory. These race conditions result from the fact that some
+       component of the directory prefix given to ooppeenn() could be changed in parallel with the call to ooppeenn().  Suppose,
+       for  example,  that we wish to create the file _d_i_r_1_/_d_i_r_2_/_x_x_x_._d_e_p if the file _d_i_r_1_/_d_i_r_2_/_x_x_x exists. The problem is
+       that between the existence check and the file-creation step, _d_i_r_1 or _d_i_r_2 (which might be symbolic  links)  could
+       be modified to point to a different location. Such races can be avoided by opening a file descriptor for the tar‐
+       get directory, and then specifying that file descriptor as the _d_i_r_f_d argument of (say) ffssttaattaatt(2)  and  ooppeennaatt().
+       The use of the _d_i_r_f_d file descriptor also has other benefits:
+
+       *  the file descriptor is a stable reference to the directory, even if the directory is renamed; and
+
+       *  the  open file descriptor prevents the underlying filesystem from being dismounted, just as when a process has
+          a current working directory on a filesystem.
+
+       Second, ooppeennaatt() allows the implementation of a per-thread "current working directory",  via  file  descriptor(s)
+       maintained  by  the  application.  (This  functionality  can  also  be  obtained  by  tricks  based on the use of
+       _/_p_r_o_c_/_s_e_l_f_/_f_d_/dirfd, but less efficiently.)
+
+   OO__DDIIRREECCTT
+       The OO__DDIIRREECCTT flag may impose alignment restrictions on the length and address of user-space buffers and the  file
+       offset  of  I/Os. In Linux alignment restrictions vary by filesystem and kernel version and might be absent enti‐
+       rely. However there is currently no filesystem-independent interface for an application to  discover  these  res‐
+       trictions for a given file or filesystem. Some filesystems provide their own interfaces for doing so, for example
+       the XXFFSS__IIOOCC__DDIIOOIINNFFOO operation in xxffssccttll(3).
+
+       Under Linux 2.4, transfer sizes, and the alignment of the user buffer and the file offset must all  be  multiples
+       of the logical block size of the filesystem. Since Linux 2.6.0, alignment to the logical block size of the under‐
+       lying storage (typically 512 bytes) suffices. The logical block size can be determined using the iiooccttll(2) BBLLKKSSSSZZ‐‐
+       GGEETT operation or from the shell using the command:
+
+           blockdev --getss
+
+       OO__DDIIRREECCTT  I/Os  should  never be run concurrently with the ffoorrkk(2) system call, if the memory buffer is a private
+       mapping (i.e., any mapping created with the mmmmaapp(2) MMAAPP__PPRRIIVVAATTEE flag; this includes memory allocated on the  heap
+       and  statically  allocated  buffers).  Any such I/Os, whether submitted via an asynchronous I/O interface or from
+       another thread in the process, should be completed before ffoorrkk(2) is called. Failure to do so can result in  data
+       corruption  and undefined behavior in parent and child processes. This restriction does not apply when the memory
+       buffer for the OO__DDIIRREECCTT I/Os was created using sshhmmaatt(2) or mmmmaapp(2) with the MMAAPP__SSHHAARREEDD flag. Nor does  this  res‐
+       triction  apply  when  the memory buffer has been advised as MMAADDVV__DDOONNTTFFOORRKK with mmaaddvviissee(2), ensuring that it will
+       not be available to the child after ffoorrkk(2).
+
+       The OO__DDIIRREECCTT flag was introduced in SGI IRIX, where it has alignment restrictions similar to those of Linux  2.4.
+       IRIX  has  also  a ffccnnttll(2) call to query appropriate alignments, and sizes. FreeBSD 4.x introduced a flag of the
+       same name, but without alignment restrictions.
+
+       OO__DDIIRREECCTT support was added under Linux in kernel version 2.4.10. Older Linux kernels  simply  ignore  this  flag.
+       Some filesystems may not implement the flag, in which case ooppeenn() fails with the error EEIINNVVAALL if it is used.
+
+       Applications should avoid mixing OO__DDIIRREECCTT and normal I/O to the same file, and especially to overlapping byte re‐
+       gions in the same file. Even when the filesystem correctly handles the coherency issues in this  situation,  ove‐
+       rall  I/O  throughput  is  likely  to be slower than using either mode alone. Likewise, applications should avoid
+       mixing mmmmaapp(2) of files with direct I/O to the same files.
+
+       The behavior of OO__DDIIRREECCTT with NFS will differ from local filesystems. Older kernels,  or  kernels  configured  in
+       certain ways, may not support this combination. The NFS protocol does not support passing the flag to the server,
+       so OO__DDIIRREECCTT I/O will bypass the page cache only on the client; the server may still cache  the  I/O.  The  client
+       asks  the server to make the I/O synchronous to preserve the synchronous semantics of OO__DDIIRREECCTT. Some servers will
+       perform poorly under these circumstances, especially if the I/O size is small. Some servers may also be  configu‐
+       red  to  lie  to  clients about the I/O having reached stable storage; this will avoid the performance penalty at
+       some risk to data integrity in the event of server power failure. The Linux NFS client places no  alignment  res‐
+       trictions on OO__DDIIRREECCTT I/O.
+
+       In  summary, OO__DDIIRREECCTT is a potentially powerful tool that should be used with caution. It is recommended that ap‐
+       plications treat use of OO__DDIIRREECCTT as a performance option which is disabled by default.
+
+BBUUGGSS
+       Currently, it is not possible to enable signal-driven I/O by specifying OO__AASSYYNNCC when calling ooppeenn(); use ffccnnttll(2)
+       to enable this flag.
+
+       One must check for two different error codes, EEIISSDDIIRR and EENNOOEENNTT, when trying to determine whether the kernel sup‐
+       ports OO__TTMMPPFFIILLEE functionality.
+
+       When both OO__CCRREEAATT and OO__DDIIRREECCTTOORRYY are specified in _f_l_a_g_s and the file  specified  by  _p_a_t_h_n_a_m_e  does  not  exist,
+       ooppeenn() will create a regular file (i.e., OO__DDIIRREECCTTOORRYY is ignored).
+
+SSEEEE AALLSSOO
+       cchhmmoodd(2),   cchhoowwnn(2),   cclloossee(2),   dduupp(2),   ffccnnttll(2),   lliinnkk(2),   llsseeeekk(2),   mmkknnoodd(2),   mmmmaapp(2),   mmoouunntt(2),
+       ooppeenn__bbyy__hhaannddllee__aatt(2), rreeaadd(2), ssoocckkeett(2), ssttaatt(2), uummaasskk(2), uunnlliinnkk(2), wwrriittee(2), ffooppeenn(3), aaccll(5), ffiiffoo(7),  iinn‐‐
+       ooddee(7), ppaatthh__rreessoolluuttiioonn(7), ssyymmlliinnkk(7)
+
+CCOOLLOOPPHHOONN
+       This page is part of release 5.04 of the Linux _m_a_n_-_p_a_g_e_s project. A description of the project, information about
+       reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.
+
+Linux                                                  2018-04-30                                                OPEN(2)
