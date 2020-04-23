@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 
 #define SCRIPT_USAGE "Usage: when N\n"
@@ -10,6 +10,8 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Error: one argument needed\n%s", SCRIPT_USAGE);
     return EXIT_FAILURE;
   }
+
+  // Get time argument
   time_t arg_time = atol(argv[1]);
   if(time < 0) {
     fprintf(stderr, "Error: N must be greater or equals than 0\n%s", SCRIPT_USAGE);
@@ -26,5 +28,5 @@ int main(int argc, char **argv) {
   // Print date
   printf("%s", arg_date);
 
-  return 0;
+  return EXIT_SUCCESS;
 }

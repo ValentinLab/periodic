@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -g -I lib/
+CFLAGS=-std=c99 -Wall -g -I include/
 LDFLAGS=-g
 LDLIBS=-L lib -l controlsyscall
 BIN_DIR=bin/
@@ -28,7 +28,7 @@ when.o: when.c
 # periodic.c
 
 $(BIN_DIR)periodic: periodic.o lib/libcontrolsyscall.so
-	$(CC) $(LDFLAGS) -o $@ $<
+	$(CC) $(LDFLAGS) $(LDLIBS) -o $@ $<
 
 periodic.o: periodic.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -39,7 +39,7 @@ $(BIN_DIR)period: period.o lib/libcontrolsyscall.so
 	$(CC) $(LDFLAGS) $(LDLIBS) -o $@ $<
 
 period.o: period.c
-	$(CC) $(CFLAGS) -I include -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 # ----- LIBRARIES -----
 
@@ -49,7 +49,7 @@ lib/libcontrolsyscall.so: lib/src/controlstream.o
 	$(CC) $(LDFLAGS) -shared -o $@ $<
 
 lib/src/controlstream.o: lib/src/controlstream.c include/controlstream.h
-	$(CC) $(CFLAGS) -c -I include -fPIC -o $@ $<
+	$(CC) $(CFLAGS) -c -fPIC -o $@ $<
 
 # House cleaning
 

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 #include "controlstream.h"
 
 void write_pid() {
@@ -9,6 +10,10 @@ void write_pid() {
 
   // Check if PID file already exists
   int acc = access(pid_filename, F_OK);
+  if(acc == -1 && errno != ENOENT) {
+    perror("Access file (access)");
+    exit(EXIT_FAILURE);
+  }
   if(acc == 0) {
     fprintf(stderr, "Error: a period process is already running.\n");
     exit(EXIT_FAILURE);
@@ -21,8 +26,10 @@ void write_pid() {
 }
 
 int main(int argc, char **argv) {
+  // Save PID in a file
   write_pid();
+
   // TODO : question 6.2 (pour la version finale)
-  
-  return 0;
+
+  return EXIT_SUCCESS;
 }
