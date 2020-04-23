@@ -1,19 +1,19 @@
 CC=gcc
-CFLAGS=-Wall -std=c99 -g
+CFLAGS=-std=c99 -Wall -g
 LDFLAGS=-g
-BIN_DIR=./bin/
-SRC=$(BIN_DIR)now $(BIN_DIR)when
+BIN_DIR=bin/
+TARGETS=$(BIN_DIR)now $(BIN_DIR)when $(BIN_DIR)period
 
-ALL: $(SRC)
+all: $(TARGETS)
 
 $(BIN_DIR)%: %.o
 	$(CC) $(LDFLAGS) -o $@ $<
 
 %.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -rf *.o
+	rm -f *.o
 
 mrproper: clean
-	rm -rf ./bin/*
+	rm -f $(TARGETS)
