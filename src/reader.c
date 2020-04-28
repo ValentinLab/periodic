@@ -6,8 +6,8 @@
 #include "../include/message.h"
 
 int main(int argc, char *argv[]) {
-  char *myfifo = "/tmp/reader";
-  int fd = open(myfifo, O_RDONLY);
+  char *path = "/tmp/reader";
+  int fd = open(path, O_RDONLY);
   printf("%s\n", recv_string(fd));
   
   char **args = recv_argv(fd);
