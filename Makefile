@@ -45,10 +45,13 @@ period.o: period.c
 
 # libcontrolsyscall.so
 
-lib/libcontrolsyscall.so: lib/src/controlstream.o
-	$(CC) $(LDFLAGS) -shared -o $@ $<
+lib/libcontrolsyscall.so: lib/src/controlstream.o lib/src/controlfd.o
+	$(CC) $(LDFLAGS) -shared -o $@ $^
 
 lib/src/controlstream.o: lib/src/controlstream.c include/controlstream.h
+	$(CC) $(CFLAGS) -c -fPIC -o $@ $<
+
+lib/src/controlfd.o: lib/src/controlfd.c include/controlfd.h
 	$(CC) $(CFLAGS) -c -fPIC -o $@ $<
 
 # House cleaning

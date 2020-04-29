@@ -1,7 +1,7 @@
 #ifndef CONTROLFD_H
 #define CONTROLFD_H
 
-#include <sys/stat.h>
+#include <sys/types.h>
 
 int open_control_errors(const char *pathname, int flags);
 

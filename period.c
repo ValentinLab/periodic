@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include "controlfd.h"
 #include "controlstream.h"
 
 int file_exists(const char *pathname) {
@@ -31,6 +33,26 @@ void write_pid() {
   FILE *pid_output = fopen_control_errors(pid_pathname, "w");
   fprintf(pid_output, "%d", getpid());
   fclose_control_errors(pid_output);
+}
+
+void output_redirections() {
+  // Stdout
+  int fd = open_m_control_errors("/tmp/period.out", O_WRONLY | O_CREAT, 0644);
+  int ret = dup2(fd, 1);
+  if(ret == -1) {
+    perror("Ouput redir (dup2)");
+    exit(EXIT_FAILURE);
+  }
+  close_control_errors(fd);
+
+  // Stderr
+  fd = open_m_control_errors("/tmp/period.err", O_WRONLY | O_CREAT, 0644);
+  ret = dup2(fd, 2);
+  if(ret == -1) {
+    perror("Ouput redir (dup2)");
+    exit(EXIT_FAILURE);
+  }
+  close_control_errors(fd);
 }
 
 void create_fifo() {
@@ -72,7 +94,7 @@ void create_directory() {
 int main(int argc, char **argv) {
   // Save PID in a file, creae a named pipe and a period directory
   write_pid();
-  // TODO : question 6.2 (pour la version finale)
+  //output_redirections();
   create_fifo();
   create_directory();
 
