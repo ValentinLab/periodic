@@ -2,3 +2,4 @@ periodic
 period
 *.o
 bin/
+.vscode/

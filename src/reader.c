@@ -5,9 +5,10 @@
 #include <unistd.h>
 #include "../include/message.h"
 
+#define FILE_PATH "/tmp/reader"
+
 int main(int argc, char *argv[]) {
-  char *path = "/tmp/reader";
-  int fd = open(path, O_RDONLY);
+  int fd = open(FILE_PATH, O_RDONLY);
   printf("%s\n", recv_string(fd));
   
   char **args = recv_argv(fd);

@@ -6,17 +6,18 @@
 #include <unistd.h>
 #include "../include/message.h"
 
-int main(int argc, char *argv[]) {
-  char *path = "/tmp/reader";
-  char *args[3] = {"arg1", "arg2", NULL};
-  mkfifo(path, 0666);
+#define FILE_PATH "/tmp/reader"
 
-  int fd = open(path, O_WRONLY);
+int main(int argc, char *argv[]) {
+  char *args[3] = {"arg1", "arg2", NULL};
+  mkfifo(FILE_PATH, 0666);
+
+  int fd = open(FILE_PATH, O_WRONLY);
   send_string(fd,"send string");
   send_argv(fd, args);
   close(fd);
 
-  unlink(path);
+  unlink(FILE_PATH);
 
   return EXIT_SUCCESS;
 }
