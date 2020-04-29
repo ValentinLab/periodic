@@ -1,7 +1,7 @@
 # Files
 *.o
 bin/
-*.so
+lib/*.so
 
 # VS Code
 .vscode/
