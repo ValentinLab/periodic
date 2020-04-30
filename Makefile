@@ -3,7 +3,7 @@ CFLAGS=-std=c99 -Wall -g -I include/
 LDFLAGS=-g
 LDLIBS=-L lib -l controlsyscall
 BIN_DIR=bin/
-TARGETS=$(BIN_DIR)now $(BIN_DIR)when $(BIN_DIR)period
+TARGETS=$(BIN_DIR)now $(BIN_DIR)when $(BIN_DIR)period $(BIN_DIR)launch_daemon
 
 all: $(TARGETS)
 
@@ -40,6 +40,10 @@ $(BIN_DIR)period: period.o lib/libcontrolsyscall.so
 
 period.o: period.c
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+# launch_daemon.c
+$(BIN_DIR)launch_daemon: launch_daemon.c
+	$(CC) $(CFLAGS) -o $@ $<
 
 # ----- LIBRARIES -----
 

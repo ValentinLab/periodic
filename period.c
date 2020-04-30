@@ -92,7 +92,7 @@ void create_directory() {
 }
 
 int main(int argc, char **argv) {
-  // Save PID in a file, creae a named pipe and a period directory
+  // Save PID in a file, create a named pipe and a period directory
   write_pid();
   //output_redirections();
   create_fifo();
