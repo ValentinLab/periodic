@@ -25,7 +25,6 @@ void write_pid() {
   // Check if PID file already exists
   int exists = file_exists(pid_pathname);
   if(exists == 0) {
-    fprintf(stderr, "Error: a period process is already running.\n");
     exit(EXIT_FAILURE);
   }
 
@@ -97,6 +96,8 @@ int main(int argc, char **argv) {
   //output_redirections();
   create_fifo();
   create_directory();
+
+  sleep(100);
 
   return EXIT_SUCCESS;
 }

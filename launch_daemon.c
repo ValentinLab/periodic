@@ -2,31 +2,40 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include "controlgeneral.h"
+#include "controlfd.h"
+
+#define DAEMON_PATHNAME "/home/valentin/documents/travail/l2/s4/systeme/projets/periodic/bin/period"
 
 int main(int argc, char **argv) {
-  pid_t pid = fork();
-  if(pid == -1) {
-    perror("New child (fork)");
-    return EXIT_FAILURE;
-  }
+  // Fork
+  pid_t pid = fork_control();
 
+  // Child
   if(pid == 0) {
+    // Session leader
     pid = setsid();
-    if(pid == -1) {
-      perror("Set SID (setsid)");
-      exit(EXIT_FAILURE);
-    }
+    perror_control(pid,"Set SID (setsid)");
 
-    pid = fork();
-    if(pid == -1) {
-      perror("New child (fork)");
-      exit(EXIT_FAILURE);
-    }
+    // Fork
+    pid = fork_control();
 
+    // Child
     if(pid == 0) {
-      execl("bin/period", "period", NULL);
+      // Change working directory and umask
+      int ret = chdir("/");
+      perror_control(ret, "Change working directory (chdir)");
+      umask(0);
 
+      // Close standard file descriptors
+      close_control_errors(0);
+      close_control_errors(1);
+      close_control_errors(2);
+
+      // Exec daemon
+      execl(DAEMON_PATHNAME, "period", NULL);
       perror("Launch period (execl)");
       exit(EXIT_FAILURE);
     }
@@ -34,11 +43,8 @@ int main(int argc, char **argv) {
     exit(EXIT_SUCCESS);
   }
 
-  pid = wait(NULL);
-  if(pid == -1) {
-    perror("Wait child (wait)");
-    return EXIT_FAILURE;
-  }
+  // Wait child
+  pid = wait_control(NULL);
 
   return EXIT_SUCCESS;
 }

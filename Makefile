@@ -43,14 +43,17 @@ period.o: period.c
 
 # launch_daemon.c
 $(BIN_DIR)launch_daemon: launch_daemon.c
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) $(LDLIBS) -o $@ $<
 
 # ----- LIBRARIES -----
 
 # libcontrolsyscall.so
 
-lib/libcontrolsyscall.so: lib/src/controlstream.o lib/src/controlfd.o
+lib/libcontrolsyscall.so: lib/src/controlgeneral.o lib/src/controlstream.o lib/src/controlfd.o
 	$(CC) $(LDFLAGS) -shared -o $@ $^
+
+lib/src/controlgeneral.o: lib/src/controlgeneral.c include/controlgeneral.h
+	$(CC) $(CFLAGS) -c -fPIC -o $@ $<
 
 lib/src/controlstream.o: lib/src/controlstream.c include/controlstream.h
 	$(CC) $(CFLAGS) -c -fPIC -o $@ $<
