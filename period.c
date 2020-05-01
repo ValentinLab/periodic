@@ -5,14 +5,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "controlfd.h"
-#include "controlstream.h"
+#include "controlsyscall.h"
 
 int file_exists(const char *pathname) {
   int ret = access(pathname, F_OK);
   if(ret == -1 && errno != ENOENT) {
     perror("Access file (access)");
-    exit(EXIT_FAILURE);
+    exit(EXIT_SYSCALL);
   }
 
   return ret;
@@ -29,29 +28,21 @@ void write_pid() {
   }
 
   // Write pid
-  FILE *pid_output = fopen_control_errors(pid_pathname, "w");
+  FILE *pid_output = fopen_control(pid_pathname, "w");
   fprintf(pid_output, "%d", getpid());
-  fclose_control_errors(pid_output);
+  fclose_control(pid_output);
 }
 
 void output_redirections() {
   // Stdout
-  int fd = open_m_control_errors("/tmp/period.out", O_WRONLY | O_CREAT, 0644);
-  int ret = dup2(fd, 1);
-  if(ret == -1) {
-    perror("Ouput redir (dup2)");
-    exit(EXIT_FAILURE);
-  }
-  close_control_errors(fd);
+  int fd = open_m_control("/tmp/period.out", O_WRONLY | O_CREAT, 0644);
+  dup2_control(fd, 1);
+  close_control(fd);
 
   // Stderr
-  fd = open_m_control_errors("/tmp/period.err", O_WRONLY | O_CREAT, 0644);
-  ret = dup2(fd, 2);
-  if(ret == -1) {
-    perror("Ouput redir (dup2)");
-    exit(EXIT_FAILURE);
-  }
-  close_control_errors(fd);
+  fd = open_m_control("/tmp/period.err", O_WRONLY | O_CREAT, 0644);
+  dup2_control(fd, 2);
+  close_control(fd);
 }
 
 void create_fifo() {
@@ -66,10 +57,7 @@ void create_fifo() {
 
   // Named pipe creation
   int ret = mkfifo(fifo_pathname, 0644);
-  if(ret == -1) {
-    perror("Create fifo (mkfifo)");
-    exit(EXIT_FAILURE);
-  }
+  perror_control(ret, "Create fifo (mkfifo)");
 }
 
 void create_directory() {
@@ -80,14 +68,10 @@ void create_directory() {
   int exists = file_exists(dir_pathname);
   if(exists == 0) {
     return;
-
   }
 
   int ret = mkdir(dir_pathname, 0777);
-  if(ret == -1) {
-    perror("Create directory (mkdir)");
-    exit(EXIT_FAILURE);
-  }
+  perror_control(ret, "Create directory (mkdir)");
 }
 
 int main(int argc, char **argv) {
@@ -96,8 +80,6 @@ int main(int argc, char **argv) {
   //output_redirections();
   create_fifo();
   create_directory();
-
-  sleep(100);
 
   return EXIT_SUCCESS;
 }

@@ -4,12 +4,19 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "controlgeneral.h"
-#include "controlfd.h"
+#include "controlsyscall.h"
 
-#define DAEMON_PATHNAME "/home/valentin/documents/travail/l2/s4/systeme/projets/periodic/bin/period"
+#define USAGE "launch_daemon ABSOLUTE_PATH"
 
 int main(int argc, char **argv) {
+  // Check arguments number
+  if(argc != 2) {
+    fprintf(stderr, "Error: Two arguments are needed\n%s", USAGE);
+    return EXIT_FAILURE;
+  }
+  // Check path to daemon
+  
+
   // Fork
   pid_t pid = fork_control();
 
@@ -30,14 +37,14 @@ int main(int argc, char **argv) {
       umask(0);
 
       // Close standard file descriptors
-      close_control_errors(0);
-      close_control_errors(1);
-      close_control_errors(2);
+      close_control(0);
+      close_control(1);
+      close_control(2);
 
       // Exec daemon
-      execl(DAEMON_PATHNAME, "period", NULL);
+      execl("DAEMON_PATHNAME", "period", NULL);
       perror("Launch period (execl)");
-      exit(EXIT_FAILURE);
+      exit(EXIT_SYSCALL);
     }
 
     exit(EXIT_SUCCESS);

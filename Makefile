@@ -1,67 +1,33 @@
 CC=gcc
 CFLAGS=-std=c99 -Wall -g -I include/
 LDFLAGS=-g
-LDLIBS=-L lib -l controlsyscall
+LDLIBS=-L lib/ -l controlsyscall
 BIN_DIR=bin/
+LIB_DIR=lib/
+LIB=$(LIB_DIR)libcontrolsyscall.so
 TARGETS=$(BIN_DIR)now $(BIN_DIR)when $(BIN_DIR)period $(BIN_DIR)launch_daemon
 
 all: $(TARGETS)
 
 # ----- FILES -----
 
-# now.c
-
-$(BIN_DIR)now: now.o
-	$(CC) $(LDFLAGS) -o $@ $<
-
-now.o: now.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-# when.c
-
-$(BIN_DIR)when: when.o
-	$(CC) $(LDFLAGS) -o $@ $<
-
-when.o: when.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-# periodic.c
-
-$(BIN_DIR)periodic: periodic.o lib/libcontrolsyscall.so
+$(BIN_DIR)%: %.o $(LIB)
 	$(CC) $(LDFLAGS) $(LDLIBS) -o $@ $<
 
-periodic.o: periodic.c
+%.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# period.c
+## ----- LIBRARIES -----
 
-$(BIN_DIR)period: period.o lib/libcontrolsyscall.so
-	$(CC) $(LDFLAGS) $(LDLIBS) -o $@ $<
+$(LIB_DIR)libcontrolsyscall.so: lib/src/controlsyscall.o
+	$(CC) $(LDFLAGS) -shared -o $@ $<
 
-period.o: period.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-# launch_daemon.c
-$(BIN_DIR)launch_daemon: launch_daemon.c
-	$(CC) $(CFLAGS) $(LDLIBS) -o $@ $<
-
-# ----- LIBRARIES -----
-
-# libcontrolsyscall.so
-
-lib/libcontrolsyscall.so: lib/src/controlgeneral.o lib/src/controlstream.o lib/src/controlfd.o
-	$(CC) $(LDFLAGS) -shared -o $@ $^
-
-lib/src/controlgeneral.o: lib/src/controlgeneral.c include/controlgeneral.h
+$(LIB_DIR)src/%.o: $(LIB_DIR)src/%.c
 	$(CC) $(CFLAGS) -c -fPIC -o $@ $<
 
-lib/src/controlstream.o: lib/src/controlstream.c include/controlstream.h
-	$(CC) $(CFLAGS) -c -fPIC -o $@ $<
+## ----- HOUSE CLEANING -----
 
-lib/src/controlfd.o: lib/src/controlfd.c include/controlfd.h
-	$(CC) $(CFLAGS) -c -fPIC -o $@ $<
-
-# House cleaning
+.PHONY: clean mrproper
 
 clean:
 	rm -f *.o
@@ -69,4 +35,4 @@ clean:
 
 mrproper: clean
 	rm -f $(TARGETS)
-	rm -f lib/*.so
+	rm -f $(LIB)

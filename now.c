@@ -1,14 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include "controlsyscall.h"
 
 int main(int argc, char **argv) {
   // Get current time
   time_t now = time(NULL);
-  if(now == -1) {
-    perror("time");
-    return EXIT_FAILURE;
-  }
+  perror_control(now, "Get time (time)");
 
   // Print time
   printf("%ld", now);
