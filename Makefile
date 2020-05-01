@@ -11,21 +11,18 @@ all: $(TARGETS)
 
 # ----- FILES -----
 
-$(BIN_DIR)%: %.o $(LIB)
-	$(CC) $(LDFLAGS) $(LDLIBS) -o $@ $<
+$(BIN_DIR)%: %.c $(LIB)
+	$(CC) $(CFLAGS) $(LDLIBS) -o $@ $<
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-## ----- LIBRARIES -----
+# ----- LIBRARIES -----
 
 $(LIB_DIR)libcontrolsyscall.so: lib/src/controlsyscall.o
 	$(CC) $(LDFLAGS) -shared -o $@ $<
 
-$(LIB_DIR)src/%.o: $(LIB_DIR)src/%.c
+$(LIB_DIR)src/%.o: $(LIB_DIR)src/%.c include/%.h
 	$(CC) $(CFLAGS) -c -fPIC -o $@ $<
 
-## ----- HOUSE CLEANING -----
+# ----- HOUSE CLEANING -----
 
 .PHONY: clean mrproper
 
