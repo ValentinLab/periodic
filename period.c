@@ -1,3 +1,4 @@
+#include "period.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -6,6 +7,54 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "controlsyscall.h"
+
+/* ---------- Data structures ---------- */
+
+bool command_equals(struct command *self, struct command *other) {
+  return self->cmd == other->cmd && self->period == other->period && self->start == self->start;
+}
+
+struct list_cmd *list_cmd_add(struct list_cmd *self, const struct command *cmd) {
+  if(self == NULL || cmd == NULL) {
+    return NULL;
+  }
+
+  if(self->cmd->period > cmd->period) {
+    struct list_cmd *new = malloc(sizeof(struct list_cmd));
+    if(new == NULL) {
+      fprintf(stderr, "Error: memory allocation");
+      exit(EXIT_FAILURE);
+    }
+    new->cmd = cmd;
+    new->next = self;
+
+    return self;
+  }
+
+  self->next = list_cmd_add(self->next, cmd);
+  return self;
+}
+
+struct list_cmd *list_cmd_remove(struct list_cmd *self, const struct command *cmd) {
+  if(self == NULL || cmd == NULL) {
+    return NULL;
+  }
+
+  if(command_equals(self->cmd, cmd)) {
+    struct list_cmd *next = self->next;
+
+    free(cmd);
+    free(self->cmd);
+    free(self);
+
+    return next;
+  }
+
+  self->next = list_cmd_remove(self->next, cmd);
+  return self;
+}
+
+/* ---------- Functions ---------- */
 
 int file_exists(const char *pathname) {
   int ret = access(pathname, F_OK);
