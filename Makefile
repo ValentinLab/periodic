@@ -16,7 +16,7 @@ $(BIN_DIR)%: %.c $(LIB)
 
 # ----- LIBRARIES -----
 
-$(LIB_DIR)libcontrolsyscall.so: lib/src/controlsyscall.o
+$(LIB_DIR)libcontrolsyscall.so: $(LIB_DIR)src/controlsyscall.o
 	$(CC) $(LDFLAGS) -shared -o $@ $<
 
 $(LIB_DIR)src/%.o: $(LIB_DIR)src/%.c include/%.h
