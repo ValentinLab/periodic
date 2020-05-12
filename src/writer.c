@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include "../include/message.h"
 
-#define FILE_PATH "/tmp/reader"
+#define FILE_PATH "/tmp/reader.fifo"
 
 int main(int argc, char *argv[]) {
   char *args[3] = {"arg1", "arg2", NULL};

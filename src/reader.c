@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include "../include/message.h"
 
-#define FILE_PATH "/tmp/reader"
+#define FILE_PATH "/tmp/reader.fifo"
 
 int main(int argc, char *argv[]) {
   int fd = open(FILE_PATH, O_RDONLY);
