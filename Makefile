@@ -31,5 +31,5 @@ clean:
 	rm -f lib/src/*.o
 
 mrproper: clean
-	rm -f $(TARGETS)
-	rm -f $(LIB)
+	rm -f $(BIN_DIR)*
+	rm -f $(LIB_DIR)*.so
