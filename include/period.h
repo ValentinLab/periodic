@@ -7,7 +7,7 @@
 
 struct command {
   char *cmd;
-  long period;
+  int period;
   long start;
   long next_exec;
 };

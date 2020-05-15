@@ -19,10 +19,15 @@ volatile sig_atomic_t usr1_receive = 0;
 
 /* ---------- Data structures ---------- */
 
+// -----> DEBUG
+void command_dump(struct command *self) {
+  printf("'%s' : %ld : %d : %ld\n", self->cmd, self->start, self->period, self->next_exec);
+}
+
 struct command_list *command_list_add(struct command_list *self, struct command *data) {
   assert(data != NULL);
 
-  if(data->next_exec <= self->data->next_exec || self == NULL) {
+  if(self == NULL || data->next_exec <= self->data->next_exec) {
     struct command_list *new_node = malloc(sizeof(struct command_list));
     new_node->data = data;
     new_node->next = self;
@@ -31,6 +36,16 @@ struct command_list *command_list_add(struct command_list *self, struct command 
   }
 
   return command_list_add(self->next, data);
+}
+
+// -----> DEBUG
+void command_list_dump(struct command_list *self) {
+  if(self == NULL) {
+    return;
+  }
+
+  command_dump(self->data);
+  command_list_dump(self->next);
 }
 
 /* ---------- Handler ---------- */
@@ -111,7 +126,7 @@ void create_directory() {
   perror_control(ret, "Create directory (mkdir)");
 }
 
-void receive_new_command(int fifo_fd, struct command_list *cl) {
+struct command_list *receive_new_command(int fifo_fd, struct command_list *cl) {
   // Set flag to 0
   usr1_receive = 0;
 
@@ -120,10 +135,12 @@ void receive_new_command(int fifo_fd, struct command_list *cl) {
   struct command *cmd = malloc(sizeof(struct command));
   cmd->cmd = datas[0];
   cmd->start = atol(datas[1]);
-  cmd->period = atol(datas[2]);
+  cmd->period = atoi(datas[2]);
+  cmd->next_exec = cmd->start + cmd->period;
 
   // Add command to the list
-  command_list_add(cl, cmd);
+  cl = command_list_add(cl, cmd);
+  return cl;
 }
 
 int main(int argc, char **argv) {
@@ -141,14 +158,18 @@ int main(int argc, char **argv) {
   sigaction(SIGUSR1, &action, NULL);
 
   // Create list of commands
-  struct command_list all_cmds;
+  struct command_list *all_cmds;
 
   // Pause until signals
   while(1) {
     pause();
     if(usr1_receive == 1) {
-      receive_new_command(fifo, &all_cmds);
+      all_cmds = receive_new_command(fifo, all_cmds);
     }
+
+    printf("Affichage de la liste :\n");
+    command_list_dump(all_cmds);
+    printf("\n");
   }
 
   return EXIT_SUCCESS;

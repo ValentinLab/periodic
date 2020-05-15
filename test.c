@@ -16,7 +16,6 @@ int main(int argc, char **argv) {
   }
 
   long pid = atol(argv[1]);
-  printf("%d", pid);
   
   int fifo_fd = open_control("/tmp/period.fifo", O_WRONLY);
 
