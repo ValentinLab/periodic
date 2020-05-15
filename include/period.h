@@ -29,7 +29,7 @@ void write_pid();
 
 void output_redirections();
 
-void create_fifo();
+int create_fifo();
 
 void create_directory();
 

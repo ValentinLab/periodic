@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "message.h"
 #include "controlsyscall.h"
 
 /* ---------- Flags ---------- */
@@ -35,6 +36,7 @@ struct command_list *command_list_add(struct command_list *self, struct command 
 /* ---------- Handler ---------- */
 
 void handler(int sig) {
+  // Set flag to 1
   if(sig == SIGUSR1) {
     usr1_receive = 1;
   }
@@ -80,19 +82,19 @@ void output_redirections() {
   close_control(fd);
 }
 
-void create_fifo() {
+int create_fifo() {
   // Fifo pathname
   const char *fifo_pathname = "/tmp/period.fifo";
 
-  // Check if named pipe already exists
+  // Check if named pipe already exists, then create it
   int exists = file_exists(fifo_pathname);
-  if(exists == 0) {
-    return;
+  if(exists != 0) {
+    int ret = mkfifo(fifo_pathname, 0644);
+    perror_control(ret, "Create fifo (mkfifo)");
   }
 
-  // Named pipe creation
-  int ret = mkfifo(fifo_pathname, 0644);
-  perror_control(ret, "Create fifo (mkfifo)");
+  // Open fifo
+  return open_control(fifo_pathname, O_RDWR);
 }
 
 void create_directory() {
@@ -109,16 +111,27 @@ void create_directory() {
   perror_control(ret, "Create directory (mkdir)");
 }
 
-void receive_new_command() {
+void receive_new_command(int fifo_fd) {
   // Set flag to 0
   usr1_receive = 0;
+
+  // Get datas
+  char **datas = recv_argv(fifo_fd);
+  //struct command *cmd = malloc(sizeof(struct command));
+  size_t i = 0;
+  while(datas[i] != NULL) {
+    printf("%s\n", datas[i]);
+    ++i;
+  }
+
+  fflush(stdout);
 }
 
 int main(int argc, char **argv) {
   // Save PID in a file, create a named pipe and a period directory
   write_pid();
   //output_redirections();
-  create_fifo();
+  int fifo = create_fifo();
   create_directory();
 
   // Handler installation
@@ -129,11 +142,10 @@ int main(int argc, char **argv) {
   sigaction(SIGUSR1, &action, NULL);
 
   // Pause until signals
-  printf("cocol");
   while(1) {
     pause();
     if(usr1_receive == 1) {
-      receive_new_command();
+      receive_new_command(fifo);
     }
   }
 
