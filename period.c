@@ -40,6 +40,16 @@ struct command_list *command_list_add(struct command_list *self, struct command 
   return command_list_add(self->next, data);
 }
 
+void command_list_destroy(struct command_list *self) {
+  if(self == NULL) {
+    return;
+  }
+
+  command_list_destroy(self->next);
+  free(self->data);
+  free(self);
+}
+
 // -----> DEBUG
 void command_list_dump(struct command_list *self) {
   if(self == NULL) {
@@ -59,6 +69,11 @@ void handler(int sig) {
       break;
     case SIGUSR2:
       usr2_receive = 1;
+      break;
+    case SIGINT:
+    case SIGQUIT:
+    case SIGTERM:
+      on_progress = 0;
       break;
   }
 }
@@ -180,12 +195,16 @@ int main(int argc, char **argv) {
   action.sa_handler = handler;
   action.sa_flags = 0;
   sigaction(SIGUSR1, &action, NULL);
+  sigaction(SIGUSR2, &action, NULL);
+  sigaction(SIGINT, &action, NULL);
+  sigaction(SIGQUIT, &action, NULL);
+  sigaction(SIGTERM, &action, NULL);
 
   // Create list of commands
-  struct command_list *all_cmds;
+  struct command_list *all_cmds = NULL;
 
   // Pause until signals
-  while(1) {
+  while(on_progress) {
     pause();
 
     // SIGUSR1
@@ -199,7 +218,10 @@ int main(int argc, char **argv) {
   }
 
   // Fin du programme
-  
+  close_control(fifo);
+  int ret = unlink("/tmp/period.pid");
+  perror_control(ret, "Suppression d'un fichier (unlink)");
+  command_list_destroy(all_cmds);
 
   return EXIT_SUCCESS;
 }

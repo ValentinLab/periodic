@@ -21,7 +21,7 @@ Le programme `period`
 - [X] Exercice 9
 - [ ] Exercice 10
 - [ ] Exercice 11
-- [ ] Exercice 12
+- [X] Exercice 12
 - [X] Exercice 13
 
 Le lanceur de daemon `launch_daemon`
