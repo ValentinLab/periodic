@@ -6,21 +6,20 @@
 /* ---------- Data structures ---------- */
 
 struct command {
-  int start;
-  int period;
   char *cmd;
+  long period;
+  long start;
+  long next_exec;
 };
 
-bool command_equals(struct command *self, struct command *other);
-
-struct list_cmd {
-  struct list_cmd *next;
-  struct command *cmd;
+struct command_list {
+  struct command *data;
+  struct command_list *next;
 };
 
-struct list_cmd *list_cmd_add(struct list_cmd *self, const struct command *cmd);
+/* ---------- Data structures functions ---------- */
 
-struct list_cmd *list_cmd_remove(struct list_cmd *self, const struct command *cmd);
+struct command_list *command_list_add(struct command_list *self, struct command *data);
 
 /* ---------- Functions ---------- */
 

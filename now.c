@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include "controlsyscall.h"
+#include "include/controlsyscall.h"
 
 int main(int argc, char **argv) {
   // Get current time

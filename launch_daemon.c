@@ -17,6 +17,10 @@ int main(int argc, char **argv) {
   }
   // Check path to daemon
   const char *path_to_daemon = argv[1];
+  if(path_to_daemon[0] != '/') {
+    fprintf(stderr, "Error: the path must be absolute\n%s", USAGE);
+    return EXIT_FAILURE;
+  }
   struct stat st_daemon;
   int ret = stat(path_to_daemon, &st_daemon);
   if(ret == -1) {

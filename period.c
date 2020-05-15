@@ -1,57 +1,43 @@
+#define _DEFAULT_SOURCE
+
 #include "period.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
+#include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <unistd.h>
 #include "controlsyscall.h"
+
+/* ---------- Flags ---------- */
+
+volatile sig_atomic_t usr1_receive = 0;
 
 /* ---------- Data structures ---------- */
 
-bool command_equals(struct command *self, struct command *other) {
-  return self->cmd == other->cmd && self->period == other->period && self->start == self->start;
+struct command_list *command_list_add(struct command_list *self, struct command *data) {
+  assert(data != NULL);
+
+  if(data->next_exec <= self->data->next_exec || self == NULL) {
+    struct command_list *new_node = malloc(sizeof(struct command_list));
+    new_node->data = data;
+    new_node->next = self;
+
+    return new_node;
+  }
+
+  return command_list_add(self->next, data);
 }
 
-struct list_cmd *list_cmd_add(struct list_cmd *self, const struct command *cmd) {
-  if(self == NULL || cmd == NULL) {
-    return NULL;
+/* ---------- Handler ---------- */
+
+void handler(int sig) {
+  if(sig == SIGUSR1) {
+    usr1_receive = 1;
   }
-
-  if(self->cmd->period > cmd->period) {
-    struct list_cmd *new = malloc(sizeof(struct list_cmd));
-    if(new == NULL) {
-      fprintf(stderr, "Error: memory allocation");
-      exit(EXIT_FAILURE);
-    }
-    new->cmd = cmd;
-    new->next = self;
-
-    return self;
-  }
-
-  self->next = list_cmd_add(self->next, cmd);
-  return self;
-}
-
-struct list_cmd *list_cmd_remove(struct list_cmd *self, const struct command *cmd) {
-  if(self == NULL || cmd == NULL) {
-    return NULL;
-  }
-
-  if(command_equals(self->cmd, cmd)) {
-    struct list_cmd *next = self->next;
-
-    free(cmd);
-    free(self->cmd);
-    free(self);
-
-    return next;
-  }
-
-  self->next = list_cmd_remove(self->next, cmd);
-  return self;
 }
 
 /* ---------- Functions ---------- */
@@ -123,12 +109,33 @@ void create_directory() {
   perror_control(ret, "Create directory (mkdir)");
 }
 
+void receive_new_command() {
+  // Set flag to 0
+  usr1_receive = 0;
+}
+
 int main(int argc, char **argv) {
   // Save PID in a file, create a named pipe and a period directory
   write_pid();
   //output_redirections();
   create_fifo();
   create_directory();
+
+  // Handler installation
+  struct sigaction action;
+  sigemptyset(&action.sa_mask);
+  action.sa_handler = handler;
+  action.sa_flags = 0;
+  sigaction(SIGUSR1, &action, NULL);
+
+  // Pause until signals
+  printf("cocol");
+  while(1) {
+    pause();
+    if(usr1_receive == 1) {
+      receive_new_command();
+    }
+  }
 
   return EXIT_SUCCESS;
 }
