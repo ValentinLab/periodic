@@ -5,7 +5,7 @@ LDLIBS=-L lib/ -l controlsyscall -l message
 BIN_DIR=bin/
 LIB_DIR=lib/
 LIB=$(LIB_DIR)libcontrolsyscall.so $(LIB_DIR)libmessage.so
-TARGETS=$(BIN_DIR)now $(BIN_DIR)when $(BIN_DIR)period $(BIN_DIR)launch_daemon $(BIN_DIR)test
+TARGETS=$(BIN_DIR)now $(BIN_DIR)when $(BIN_DIR)period $(BIN_DIR)periodic $(BIN_DIR)launch_daemon
 
 all: $(TARGETS)
 
