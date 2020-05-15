@@ -16,6 +16,7 @@
 /* ---------- Flags ---------- */
 
 volatile sig_atomic_t usr1_receive = 0;
+volatile sig_atomic_t usr2_receive = 0;
 
 /* ---------- Data structures ---------- */
 
@@ -51,9 +52,13 @@ void command_list_dump(struct command_list *self) {
 /* ---------- Handler ---------- */
 
 void handler(int sig) {
-  // Set flag to 1
-  if(sig == SIGUSR1) {
-    usr1_receive = 1;
+  switch (sig) {
+    case SIGUSR1:
+      usr1_receive = 1;
+      break;
+    case SIGUSR2:
+      usr2_receive = 1;
+      break;
   }
 }
 
@@ -143,6 +148,24 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl) {
   return cl;
 }
 
+void send_all_commands(int fifo_fd, struct command_list *cl) {
+  char *current_cmd[3];
+  while(cl != NULL) {
+    char start[20];
+    sprintf(start, "%ld", cl->data->start);
+    char period[11];
+    sprintf(period, "%d", cl->data->period);
+
+    current_cmd[0] = cl->data->cmd;
+    current_cmd[1] = start;
+    current_cmd[2] = period;
+
+    send_argv(fifo_fd, current_cmd);
+
+    cl = cl->next;
+  }
+}
+
 int main(int argc, char **argv) {
   // Save PID in a file, create a named pipe and a period directory
   write_pid();
@@ -163,13 +186,15 @@ int main(int argc, char **argv) {
   // Pause until signals
   while(1) {
     pause();
+
+    // SIGUSR1
     if(usr1_receive == 1) {
       all_cmds = receive_new_command(fifo, all_cmds);
     }
-
-    printf("Affichage de la liste :\n");
-    command_list_dump(all_cmds);
-    printf("\n");
+    // SIGUSR2
+    if(usr2_receive == 1) {
+      send_all_commands(fifo, all_cmds);
+    }
   }
 
   return EXIT_SUCCESS;
