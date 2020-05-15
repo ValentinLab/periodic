@@ -111,20 +111,19 @@ void create_directory() {
   perror_control(ret, "Create directory (mkdir)");
 }
 
-void receive_new_command(int fifo_fd) {
+void receive_new_command(int fifo_fd, struct command_list *cl) {
   // Set flag to 0
   usr1_receive = 0;
 
   // Get datas
   char **datas = recv_argv(fifo_fd);
-  //struct command *cmd = malloc(sizeof(struct command));
-  size_t i = 0;
-  while(datas[i] != NULL) {
-    printf("%s\n", datas[i]);
-    ++i;
-  }
+  struct command *cmd = malloc(sizeof(struct command));
+  cmd->cmd = datas[0];
+  cmd->start = atol(datas[1]);
+  cmd->period = atol(datas[2]);
 
-  fflush(stdout);
+  // Add command to the list
+  command_list_add(cl, cmd);
 }
 
 int main(int argc, char **argv) {
@@ -141,11 +140,14 @@ int main(int argc, char **argv) {
   action.sa_flags = 0;
   sigaction(SIGUSR1, &action, NULL);
 
+  // Create list of commands
+  struct command_list all_cmds;
+
   // Pause until signals
   while(1) {
     pause();
     if(usr1_receive == 1) {
-      receive_new_command(fifo);
+      receive_new_command(fifo, &all_cmds);
     }
   }
 
