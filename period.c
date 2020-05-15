@@ -15,6 +15,7 @@
 
 /* ---------- Flags ---------- */
 
+volatile sig_atomic_t on_progress = 1;
 volatile sig_atomic_t usr1_receive = 0;
 volatile sig_atomic_t usr2_receive = 0;
 
@@ -196,6 +197,9 @@ int main(int argc, char **argv) {
       send_all_commands(fifo, all_cmds);
     }
   }
+
+  // Fin du programme
+  
 
   return EXIT_SUCCESS;
 }
