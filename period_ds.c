@@ -20,7 +20,7 @@ void command_destroy(struct command *self) {
 struct command_list *command_list_add(struct command_list *self, struct command *data) {
   assert(data != NULL);
 
-  if(self == NULL || data->next_exec <= self->data->next_exec) {
+  if(self == NULL || data->next_exec < self->data->next_exec) {
     struct command_list *new_node = malloc(sizeof(struct command_list));
     new_node->data = data;
     new_node->next = self;
@@ -28,7 +28,8 @@ struct command_list *command_list_add(struct command_list *self, struct command 
     return new_node;
   }
 
-  return command_list_add(self->next, data);
+  self->next = command_list_add(self->next, data);
+  return self;
 }
 
 void command_list_dump(struct command_list *self) {

@@ -3,12 +3,10 @@
 #include "period_main.h"
 #include "period_ds.h"
 #include "period_files.h"
-#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 #include "message.h"
 #include "controlsyscall.h"
@@ -18,6 +16,7 @@
 volatile sig_atomic_t on_progress = 1;
 volatile sig_atomic_t usr1_receive = 0;
 volatile sig_atomic_t usr2_receive = 0;
+volatile sig_atomic_t alrm_receive = 0;
 
 /* ---------- Handler ---------- */
 
@@ -28,6 +27,9 @@ void handler(int sig) {
       break;
     case SIGUSR2:
       usr2_receive = 1;
+      break;
+    case SIGALRM:
+      alrm_receive = 1;
       break;
     case SIGINT:
     case SIGQUIT:
@@ -75,6 +77,21 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
   }
 }
 
+void get_next_command(struct command_list *cl) {
+  // Get current time
+  time_t now = time(NULL);
+  perror_control(now, "Get time (time)");
+
+  // Check data structure
+  if(cl == NULL) {
+    return;
+  }
+
+  // Set alarm
+  unsigned int alarm_time = cl->data->next_exec - now;
+  alarm(alarm_time);
+}
+
 /* ---------- Main ---------- */
 
 int main(int argc, char **argv) {
@@ -91,6 +108,7 @@ int main(int argc, char **argv) {
   action.sa_flags = 0;
   sigaction(SIGUSR1, &action, NULL);
   sigaction(SIGUSR2, &action, NULL);
+  sigaction(SIGALRM, &action, NULL);
   sigaction(SIGINT, &action, NULL);
   sigaction(SIGQUIT, &action, NULL);
   sigaction(SIGTERM, &action, NULL);
@@ -102,13 +120,22 @@ int main(int argc, char **argv) {
   while(on_progress) {
     pause();
 
+    // Set alarm
+    get_next_command(all_cmds);
+
     // SIGUSR1
     if(usr1_receive == 1) {
       all_cmds = receive_new_command(fifo, all_cmds);
+
+      command_list_dump(all_cmds);
     }
     // SIGUSR2
     if(usr2_receive == 1) {
       send_all_commands(fifo, all_cmds);
+    }
+    // SIGALRM
+    if(alrm_receive == 1) {
+      fprintf(stderr, "Yes !");
     }
   }
 

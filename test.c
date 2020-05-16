@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     kill(pid, SIGUSR1);
 
     char start[21];
-    time_t tm = time(NULL) + 60*3;
+    time_t tm = time(NULL) + 30;
     perror_control(tm, "Get time (time)");
     sprintf(start, "%ld", tm);
 
