@@ -49,7 +49,7 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl) {
   cmd->cmd = datas[0];
   cmd->start = atol(datas[1]);
   cmd->period = atoi(datas[2]);
-  cmd->next_exec = cmd->start + cmd->period;
+  cmd->next_exec = cmd->start;
 
   // Add command to the list
   cl = command_list_add(cl, cmd);
