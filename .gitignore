@@ -1,5 +1,7 @@
-periodic
-period
+# Files
 *.o
 bin/
+lib/*.so
+
+# VS Code
 .vscode/

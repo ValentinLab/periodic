@@ -6,14 +6,14 @@
  * 
  * @param fd Le descripteur de fichier
  * @param str La chaine que l'on souhaite envoyer
- */ 
+ */
 int send_string(int fd, const char *str);
 
 /**
  * Permet de recevoir une chaine de caractére via un descripteur de fichier
  * 
  * @param fd Le descripteur de fichier
- */ 
+ */
 char *recv_string(int fd);
 
 /**
@@ -21,7 +21,7 @@ char *recv_string(int fd);
  * 
  * @param fd Le descripteur de fichier
  * @param argv Le tableau de chaine de caractére
- */ 
+ */
 int send_argv(int fd, char *argv[]);
 
 /**
