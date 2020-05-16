@@ -6,6 +6,8 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 #include "message.h"
@@ -120,22 +122,55 @@ int main(int argc, char **argv) {
   while(on_progress) {
     pause();
 
-    // Set alarm
-    get_next_command(all_cmds);
-
     // SIGUSR1
     if(usr1_receive == 1) {
+      // Get command
       all_cmds = receive_new_command(fifo, all_cmds);
+
+      // Set alarm
+      get_next_command(all_cmds);
 
       command_list_dump(all_cmds);
     }
     // SIGUSR2
     if(usr2_receive == 1) {
+      // Send commands
       send_all_commands(fifo, all_cmds);
     }
     // SIGALRM
     if(alrm_receive == 1) {
-      fprintf(stderr, "Yes !");
+      // Set flah to 0
+      alrm_receive = 0;
+
+      // Extract command and arguments
+      size_t sz = 0;
+      size_t index = 0;
+      while(all_cmds->data->cmd[index] != '\0') {
+        if(all_cmds->data->cmd[index] == ' ') {
+          ++sz;
+        }
+        ++index;
+      }
+      sz += 2; // last word and NULL
+      char **cmd = calloc(sz+2, sizeof(char *));
+      char *token = strtok(all_cmds->data->cmd, " ");
+      index = 0;
+      while(token != NULL) {
+        cmd[index++] = token;
+        token = strtok(NULL, " ");
+      }
+
+      index = 0;
+      while(index < sz) {
+        fprintf(stderr, "%s\n", cmd[index]);
+        ++index;
+      }
+
+      // Execute command
+      pid_t child_pid = fork_control();
+      if(child_pid == 0) {
+        execvp(cmd[0], cmd);
+      }
     }
   }
 
