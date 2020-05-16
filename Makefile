@@ -11,8 +11,28 @@ all: $(TARGETS)
 
 # ----- FILES -----
 
-$(BIN_DIR)%: %.c $(LIB)
-	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
+# now
+$(BIN_DIR)now: now.o $(LIB)
+	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
+
+# when
+$(BIN_DIR)when: when.o $(LIB)
+	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
+
+# period
+$(BIN_DIR)period: period_main.o period_ds.o period_files.o $(LIB)
+	$(CC) $(LDFLAGS) -o $@ period_main.o period_ds.o period_files.o $(LDLIBS)
+
+# periodic
+$(BIN_DIR)periodic: periodic.o $(LIB)
+	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
+
+#launch_daemon
+$(BIN_DIR)launch_daemon: launch_daemon.o $(LIB)
+	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 # ----- LIBRARIES -----
 

@@ -10,8 +10,8 @@
 #include <fcntl.h>
 #include "message.h"
 
-#define PID_PATH "./tmp/period.pid"
-#define NAMED_PIPE_PATH "./tmp/period.fifo"
+#define PID_PATH "/tmp/period.pid"
+#define NAMED_PIPE_PATH "/tmp/period.fifo"
 #define MAX_PID_SIZE 4
 
 /**
@@ -70,10 +70,6 @@ int main(int argc, char *argv[]) {
     //char *res = recv_string(pid);
     //size_t size = strlen(res);
   } else {  // Si il y a 3 arguments au moins
-    if(mkfifo(NAMED_PIPE_PATH, 0666) == -1) {
-      perror("mkfifo");
-      exit(EXIT_FAILURE);
-    }
     if (send_signal(pid,SIGUSR1) == -1) {
       exit(EXIT_FAILURE);
     }
@@ -98,7 +94,6 @@ int main(int argc, char *argv[]) {
     }
     */
     close(fd);
-    unlink(NAMED_PIPE_PATH);
   }
 
   return EXIT_SUCCESS;

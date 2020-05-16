@@ -1,37 +1,17 @@
-#ifndef PERIOD_H
-#define PERIOD_H
+#ifndef PERIOD_MAIN_H
+#define PERIOD_MAIN_H
 
-#include <stdbool.h>
+/* ---------- Handler ---------- */
 
-/* ---------- Data structures ---------- */
-
-struct command {
-  char *cmd;
-  int period;
-  long start;
-  long next_exec;
-};
-
-struct command_list {
-  struct command *data;
-  struct command_list *next;
-};
-
-/* ---------- Data structures functions ---------- */
-
-struct command_list *command_list_add(struct command_list *self, struct command *data);
+void handler(int sig);
 
 /* ---------- Functions ---------- */
 
-int file_exists(const char *pathname);
+struct command_list *receive_new_command(int fifo_fd, struct command_list *cl);
 
-void write_pid();
+void send_all_commands(int fifo_fd, struct command_list *cl);
 
-void output_redirections();
-
-int create_fifo();
-
-void create_directory();
+/* ---------- Functions ---------- */
 
 int main(int argc, char **argv);
 
