@@ -1,8 +1,8 @@
 #define _DEFAULT_SOURCE
 
-#include "period.h"
-#include <assert.h>
-#include <errno.h>
+#include "period_main.h"
+#include "period_ds.h"
+#include "period_files.h"
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -18,47 +18,6 @@
 volatile sig_atomic_t on_progress = 1;
 volatile sig_atomic_t usr1_receive = 0;
 volatile sig_atomic_t usr2_receive = 0;
-
-/* ---------- Data structures ---------- */
-
-// -----> DEBUG
-void command_dump(struct command *self) {
-  printf("'%s' : %ld : %d : %ld\n", self->cmd, self->start, self->period, self->next_exec);
-}
-
-struct command_list *command_list_add(struct command_list *self, struct command *data) {
-  assert(data != NULL);
-
-  if(self == NULL || data->next_exec <= self->data->next_exec) {
-    struct command_list *new_node = malloc(sizeof(struct command_list));
-    new_node->data = data;
-    new_node->next = self;
-
-    return new_node;
-  }
-
-  return command_list_add(self->next, data);
-}
-
-void command_list_destroy(struct command_list *self) {
-  if(self == NULL) {
-    return;
-  }
-
-  command_list_destroy(self->next);
-  free(self->data);
-  free(self);
-}
-
-// -----> DEBUG
-void command_list_dump(struct command_list *self) {
-  if(self == NULL) {
-    return;
-  }
-
-  command_dump(self->data);
-  command_list_dump(self->next);
-}
 
 /* ---------- Handler ---------- */
 
@@ -80,73 +39,6 @@ void handler(int sig) {
 
 /* ---------- Functions ---------- */
 
-int file_exists(const char *pathname) {
-  int ret = access(pathname, F_OK);
-  if(ret == -1 && errno != ENOENT) {
-    perror("Access file (access)");
-    exit(EXIT_SYSCALL);
-  }
-
-  return ret;
-}
-
-void write_pid() {
-  // PID pathname
-  const char *pid_pathname = "/tmp/period.pid";
-
-  // Check if PID file already exists
-  int exists = file_exists(pid_pathname);
-  if(exists == 0) {
-    exit(EXIT_FAILURE);
-  }
-
-  // Write pid
-  FILE *pid_output = fopen_control(pid_pathname, "w");
-  fprintf(pid_output, "%d", getpid());
-  fclose_control(pid_output);
-}
-
-void output_redirections() {
-  // Stdout
-  int fd = open_m_control("/tmp/period.out", O_WRONLY | O_CREAT, 0644);
-  dup2_control(fd, 1);
-  close_control(fd);
-
-  // Stderr
-  fd = open_m_control("/tmp/period.err", O_WRONLY | O_CREAT, 0644);
-  dup2_control(fd, 2);
-  close_control(fd);
-}
-
-int create_fifo() {
-  // Fifo pathname
-  const char *fifo_pathname = "/tmp/period.fifo";
-
-  // Check if named pipe already exists, then create it
-  int exists = file_exists(fifo_pathname);
-  if(exists != 0) {
-    int ret = mkfifo(fifo_pathname, 0644);
-    perror_control(ret, "Create fifo (mkfifo)");
-  }
-
-  // Open fifo
-  return open_control(fifo_pathname, O_RDWR);
-}
-
-void create_directory() {
-  // Folder pathname
-  const char *dir_pathname = "/tmp/period";
-
-  // Check if folder already exists
-  int exists = file_exists(dir_pathname);
-  if(exists == 0) {
-    return;
-  }
-
-  int ret = mkdir(dir_pathname, 0777);
-  perror_control(ret, "Create directory (mkdir)");
-}
-
 struct command_list *receive_new_command(int fifo_fd, struct command_list *cl) {
   // Set flag to 0
   usr1_receive = 0;
@@ -165,7 +57,7 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl) {
 }
 
 void send_all_commands(int fifo_fd, struct command_list *cl) {
-  char *current_cmd[3];
+  char *current_cmd[4];
   while(cl != NULL) {
     char start[20];
     sprintf(start, "%ld", cl->data->start);
@@ -175,12 +67,15 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     current_cmd[0] = cl->data->cmd;
     current_cmd[1] = start;
     current_cmd[2] = period;
+    current_cmd[3] = NULL;
 
     send_argv(fifo_fd, current_cmd);
 
     cl = cl->next;
   }
 }
+
+/* ---------- Main ---------- */
 
 int main(int argc, char **argv) {
   // Save PID in a file, create a named pipe and a period directory
