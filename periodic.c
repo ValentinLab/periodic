@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "controlsyscall.h"
 #include "message.h"
 
 #define PID_PATH "/tmp/period.pid"
@@ -22,17 +23,15 @@
  */ 
 int read_pid(char *path) {
   char buf[MAX_PID_SIZE];
-  FILE* file = fopen(path, "r");
-
-  if (file == NULL) {
-    return -1;
-  }
+  FILE* file = fopen_control(path, "r");
 
   while (!feof(file)) {
     fread(buf,sizeof(char),MAX_PID_SIZE,file);
   }
   
   printf("pid of period : %s\n",buf);
+  fclose_control(file);
+
   return atoi(buf);
 }
 
@@ -41,10 +40,7 @@ int read_pid(char *path) {
  */ 
 int send_signal (int pid, int signal) {
   int res = kill(pid, signal);
-  if (res == -1) {
-    perror("send_signal");
-    return -1;
-  }
+  perror_control(res, "Can't kill (send_signal)");
   return res;
 }
 
@@ -56,43 +52,28 @@ int main(int argc, char *argv[]) {
   
   // Try to read the pid of period
   int pid = read_pid(PID_PATH);
-  if(pid == -1) {
-    perror("read_pid");
-    return EXIT_FAILURE;
-  }
+  perror_control(pid, "Can't read PID (periodic)");
 
   if (argc == 1) { // Si il y a 0 argument
-    int signal = send_signal(pid,SIGUSR2);
-    if (signal == -1) {
-      exit(EXIT_FAILURE);
-    }
+    int fd = open(NAMED_PIPE_PATH, O_RDONLY);
+    perror_control(fd, "open named pipe (periodic)");
+
+    perror_control(send_signal(pid, SIGUSR2), "Can't send SIGUSR2 (periodic)");
     printf("Registred command : \n");
-    //char *res = recv_string(pid);
-    //size_t size = strlen(res);
+    char **res = recv_argv(fd);
+    close(fd);
+    int i = 0;
+    while (res[i] != NULL) {
+      printf("%s ", res[i]);
+      i++;
+    }
   } else {  // Si il y a 3 arguments au moins
-    if (send_signal(pid,SIGUSR1) == -1) {
-      exit(EXIT_FAILURE);
-    }
+    perror_control(send_signal(pid, SIGUSR1), "Can't send SIGUSR1 (periodic)");
+
     int fd = open(NAMED_PIPE_PATH, O_WRONLY);
-    if (fd == -1) {
-      perror("open named pipe");
-      exit(EXIT_FAILURE);
-    }
-    send_string(fd, argv[1]);
-    send_string(fd, argv[2]);
-    send_string(fd, argv[3]);
-    /*
-    if (argc > 4) {
-      size_t sizeArgs = argc-4;
-      char** args = calloc(sizeArgs, sizeof(char *));
-      for (size_t i = sizeArgs; i < argc; i++) {
-        args[i - sizeArgs] = argv[i];
-      }
-      for (size_t i = 0; i < sizeArgs; i++) {
-        printf("%s\n", args[i]);
-      }
-    }
-    */
+    perror_control(fd, "open named pipe (periodic)");
+
+    send_argv(fd, argv+1);
     close(fd);
   }
 

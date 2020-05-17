@@ -1,4 +1,5 @@
-#include "message.h"
+#include "../../include/controlsyscall.h"
+#include "../../include/message.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -6,23 +7,18 @@
 
 int send_string(int fd, const char *str) {
   size_t size = strlen(str);
-  if(write(fd,&size,sizeof(size_t)) == -1) {
-    perror("send_string");
-    return -1;
-  }
-  if(write(fd,str,size)) {
-    perror("send_string");
-    return -1;
-  }
+
+  perror_control(write(fd,&size,sizeof(size_t)), "Fail to write (send_string)");
+  perror_control(write(fd,str,size), "Fail to write (send_string)");
 
   return EXIT_SUCCESS;
 }
 
 char *recv_string(int fd) {
   size_t size = 0;
-  read(fd,&size,sizeof(size_t));
+  perror_control(read(fd,&size,sizeof(size_t)), "Fail to read (recv_string)");
   char *buf = calloc(size,sizeof(char));
-  read(fd,buf,size);
+  perror_control(read(fd,buf,size), "Fail to read (recv_string)");
   return buf;
 }
 
@@ -31,7 +27,7 @@ int send_argv(int fd, char *argv[]) {
   while (argv[size] != NULL) {
     size++;
   }
-  write(fd,&size,sizeof(size_t));
+  perror_control(write(fd,&size,sizeof(size_t)), "Fail to write (send_argv)");
   
   for (size_t i = 0; i < size; i++) {
     send_string(fd, argv[i]);
@@ -42,7 +38,7 @@ int send_argv(int fd, char *argv[]) {
 
 char **recv_argv(int fd) {
   size_t size = 0;
-  read(fd,&size,sizeof(size_t));
+  perror_control(read(fd,&size,sizeof(size_t)), "Fail to read (recv_argv)");
   char **buf = calloc(size+1,sizeof(char *));
   for (size_t i = 0; i < size; i++) {
     buf[i] = recv_string(fd);
