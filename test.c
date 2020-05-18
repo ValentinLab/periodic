@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     perror_control(tm, "Get time (time)");
     sprintf(start, "%ld", tm);
 
-    char *datas[] = {"ls -l", start, "5", NULL};
+    char *datas[] = {"date +%H:%M:%S", start, "5", NULL};
     send_argv(fifo_fd, datas);
   } else {
     fifo_fd = open_control("/tmp/period.fifo", O_RDONLY);

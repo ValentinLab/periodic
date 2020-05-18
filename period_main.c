@@ -19,6 +19,7 @@ volatile sig_atomic_t on_progress = 1;
 volatile sig_atomic_t usr1_receive = 0;
 volatile sig_atomic_t usr2_receive = 0;
 volatile sig_atomic_t alrm_receive = 0;
+volatile sig_atomic_t chld_receive = 0;
 
 /* ---------- Handler ---------- */
 
@@ -32,6 +33,9 @@ void handler(int sig) {
       break;
     case SIGALRM:
       alrm_receive = 1;
+      break;
+    case SIGCHLD:
+      chld_receive = 1;
       break;
     case SIGINT:
     case SIGQUIT:
@@ -94,6 +98,57 @@ void get_next_command(struct command_list *cl) {
   alarm(alarm_time);
 }
 
+void execute_command(struct command_list *cl) {
+  // Extract command and arguments
+  size_t sz = 0;
+  size_t index = 0;
+  while(cl->data->cmd[index] != '\0') {
+    if(cl->data->cmd[index] == ' ') {
+      ++sz;
+    }
+    ++index;
+  }
+  sz += 2; // last word and NULL
+  char **cmd = calloc(sz+2, sizeof(char *));
+  char *token = calloc(255, sizeof(char));
+  strcpy(token, cl->data->cmd);
+  token = strtok(token, " ");
+  index = 0;
+  while(token != NULL) {
+    cmd[index++] = token;
+    token = strtok(NULL, " ");
+  }
+
+  // Execute command
+  pid_t child_pid = fork_control();
+  if(child_pid == 0) {
+    execvp(cmd[0], cmd);
+
+    perror("Execute command (execvp)");
+    exit(EXIT_SYSCALL);
+  }
+
+  // Free datas
+  free(cmd);
+  free(token);
+
+  // Change data
+  cl->data->next_exec = cl->data->next_exec + cl->data->period;
+}
+
+void wait_child() {
+  // Wait child
+  int status;
+  pid_t pid = wait_control(&status);
+
+  // Save status
+  if(WIFEXITED(status)) {
+    fprintf(stderr, "Process %d terminated : exit status %d\n", pid, WEXITSTATUS(status));
+  } else if(WIFSIGNALED(status)) {
+    fprintf(stderr, "Process %d terminated : signal number %d\n", pid, WTERMSIG(status));
+  }
+}
+
 /* ---------- Main ---------- */
 
 int main(int argc, char **argv) {
@@ -111,6 +166,7 @@ int main(int argc, char **argv) {
   sigaction(SIGUSR1, &action, NULL);
   sigaction(SIGUSR2, &action, NULL);
   sigaction(SIGALRM, &action, NULL);
+  sigaction(SIGCHLD, &action, NULL);
   sigaction(SIGINT, &action, NULL);
   sigaction(SIGQUIT, &action, NULL);
   sigaction(SIGTERM, &action, NULL);
@@ -130,6 +186,7 @@ int main(int argc, char **argv) {
       // Set alarm
       get_next_command(all_cmds);
 
+      // -----> DEBUG
       command_list_dump(all_cmds);
     }
     // SIGUSR2
@@ -139,38 +196,20 @@ int main(int argc, char **argv) {
     }
     // SIGALRM
     if(alrm_receive == 1) {
-      // Set flah to 0
+      // Set flag to 0
       alrm_receive = 0;
 
-      // Extract command and arguments
-      size_t sz = 0;
-      size_t index = 0;
-      while(all_cmds->data->cmd[index] != '\0') {
-        if(all_cmds->data->cmd[index] == ' ') {
-          ++sz;
-        }
-        ++index;
-      }
-      sz += 2; // last word and NULL
-      char **cmd = calloc(sz+2, sizeof(char *));
-      char *token = strtok(all_cmds->data->cmd, " ");
-      index = 0;
-      while(token != NULL) {
-        cmd[index++] = token;
-        token = strtok(NULL, " ");
-      }
-
-      index = 0;
-      while(index < sz) {
-        fprintf(stderr, "%s\n", cmd[index]);
-        ++index;
-      }
-
       // Execute command
-      pid_t child_pid = fork_control();
-      if(child_pid == 0) {
-        execvp(cmd[0], cmd);
-      }
+      execute_command(all_cmds);
+      get_next_command(all_cmds);
+    }
+    // SIGCHLD
+    if(chld_receive == 1) {
+      // Set flag to 0
+      chld_receive = 0;
+
+      // Wait child
+      wait_child();
     }
   }
 

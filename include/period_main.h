@@ -13,6 +13,10 @@ void send_all_commands(int fifo_fd, struct command_list *cl);
 
 void get_next_command(struct command_list *cl);
 
+void execute_command(struct command_list *cl);
+
+void wait_child();
+
 /* ---------- Functions ---------- */
 
 int main(int argc, char **argv);
