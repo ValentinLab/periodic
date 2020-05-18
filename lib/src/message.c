@@ -7,7 +7,6 @@
 
 int send_string(int fd, const char *str) {
   size_t size = strlen(str);
-
   perror_control(write(fd,&size,sizeof(size_t)), "Fail to write (send_string)");
   perror_control(write(fd,str,size), "Fail to write (send_string)");
 
@@ -17,7 +16,7 @@ int send_string(int fd, const char *str) {
 char *recv_string(int fd) {
   size_t size = 0;
   perror_control(read(fd,&size,sizeof(size_t)), "Fail to read (recv_string)");
-  char *buf = calloc(size,sizeof(char));
+  char *buf = calloc(size+1,sizeof(char));
   perror_control(read(fd,buf,size), "Fail to read (recv_string)");
   return buf;
 }
