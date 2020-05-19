@@ -2,12 +2,26 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "controlsyscall.h"
 
 /* ---------- Command structure ---------- */
 
-void command_dump(struct command *self) {
+void command_dump(const struct command *self) {
+  if(self == NULL) {
+    printf("-NULL-");
+    return;
+  }
+
   printf("'%s' : %ld : %d : %ld\n", self->cmd, self->start, self->period, self->next_exec);
+}
+
+int command_cmp(const struct command *one, const struct command *two) {
+  int cmd = strcmp(one->cmd, two->cmd);
+  int start = one->start - two->start;
+  int period = one->period - two->period;
+
+  return cmd + start + period;
 }
 
 void command_destroy(struct command *self) {
@@ -32,8 +46,36 @@ struct command_list *command_list_add(struct command_list *self, struct command 
   return self;
 }
 
-void command_list_dump(struct command_list *self) {
+struct command_list *command_list_remove(struct command_list *self, struct command *data) {
   if(self == NULL) {
+    return NULL;
+  }
+
+  if(self->next == NULL) {
+    if(command_cmp(self->data, data) == 0) {
+      command_destroy(data);
+      free(self);
+
+      return NULL;
+    }
+  }
+
+  if(command_cmp(self->next->data, data) == 0) {
+    command_destroy(data);
+    struct command_list *tmp = self->next;
+    self->next = self->next->next;
+    free(tmp);
+
+    return self;
+  }
+
+  self->next = command_list_remove(self->next, data);
+  return self;
+}
+
+void command_list_dump(const struct command_list *self) {
+  if(self == NULL) {
+    printf("--NULL--");
     return;
   }
 

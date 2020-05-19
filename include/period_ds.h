@@ -10,7 +10,9 @@ struct command {
   long next_exec;
 };
 
-void command_dump(struct command *self);
+void command_dump(const struct command *self);
+
+int command_cmp(const struct command *one, const struct command *two);
 
 void command_destroy(struct command *self);
 
@@ -23,7 +25,9 @@ struct command_list {
 
 struct command_list *command_list_add(struct command_list *self, struct command *data);
 
-void command_list_dump(struct command_list *self);
+struct command_list *command_list_remove(struct command_list *self, struct command *data);
+
+void command_list_dump(const struct command_list *self);
 
 void command_list_destroy(struct command_list *self);
 

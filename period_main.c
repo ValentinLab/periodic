@@ -83,19 +83,32 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
   }
 }
 
-void get_next_command(struct command_list *cl) {
+struct command_list *get_next_command(struct command_list *cl) {
   // Get current time
   time_t now = time(NULL);
   perror_control(now, "Get time (time)");
 
   // Check data structure
   if(cl == NULL) {
-    return;
+    return NULL;
   }
 
   // Set alarm
   unsigned int alarm_time = cl->data->next_exec - now;
   alarm(alarm_time);
+
+  return cl;
+}
+
+struct command_list *exec_commands(struct command_list *cl, struct command_list *next) {
+  // Execute next command
+  execute_command(next);
+
+  if(next->data->period == 0) {
+    cl = command_list_remove(cl, next->data);
+  }
+
+  return cl;
 }
 
 void execute_command(struct command_list *cl) {
@@ -173,6 +186,7 @@ int main(int argc, char **argv) {
 
   // Create list of commands
   struct command_list *all_cmds = NULL;
+  struct command_list *next = NULL;
 
   // Pause until signals
   while(on_progress) {
@@ -184,10 +198,7 @@ int main(int argc, char **argv) {
       all_cmds = receive_new_command(fifo, all_cmds);
 
       // Set alarm
-      get_next_command(all_cmds);
-
-      // -----> DEBUG
-      command_list_dump(all_cmds);
+      next = get_next_command(all_cmds);
     }
     // SIGUSR2
     if(usr2_receive == 1) {
@@ -200,8 +211,7 @@ int main(int argc, char **argv) {
       alrm_receive = 0;
 
       // Execute command
-      execute_command(all_cmds);
-      get_next_command(all_cmds);
+      exec_commands(all_cmds, next);
     }
     // SIGCHLD
     if(chld_receive == 1) {
@@ -211,6 +221,9 @@ int main(int argc, char **argv) {
       // Wait child
       wait_child();
     }
+
+    // -----> DEBUG
+    command_list_dump(all_cmds);
   }
 
   // Fin du programme
