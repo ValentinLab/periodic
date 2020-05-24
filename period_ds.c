@@ -27,7 +27,7 @@ int command_cmp(const struct command *one, const struct command *two) {
 
   int args = 0;
   if(one->arg_nb == two->arg_nb) {
-    for(size_t i = 0; i < one->arg_nb; ++i) {
+    for(size_t i = 0; i < one->arg_nb-1; ++i) {
       args += strcmp(one->cmd_args[i], two->cmd_args[i]);
     }
   } else {
@@ -40,9 +40,6 @@ int command_cmp(const struct command *one, const struct command *two) {
 void command_destroy(struct command *self) {
   // Free datas
   free(self->cmd_name);
-  for(size_t i = 0; i < self->arg_nb; ++i) {
-    free(self->cmd_args[i]);
-  }
   free(self->cmd_args);
 
   // Free element

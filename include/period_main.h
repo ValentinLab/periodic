@@ -15,9 +15,9 @@ struct command_list *get_next_command(struct command_list *cl);
 
 struct command_list *exec_commands(struct command_list *cl, struct command_list *next);
 
-void execute_command(struct command_list *cl);
+void execute_one_command(struct command_list *cl);
 
-void wait_child();
+struct command_list *wait_child();
 
 /* ---------- Functions ---------- */
 

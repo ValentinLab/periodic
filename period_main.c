@@ -56,7 +56,9 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, i
   struct command *cmd = malloc(sizeof(struct command));
 
   // Get arguments number
-  cmd->arg_nb = atoi(recv_string(fifo_fd));
+  char *arg_nb_str = recv_string(fifo_fd);
+  cmd->arg_nb = atoi(arg_nb_str);
+  free(arg_nb_str);
 
   // Get datas
   char **datas = recv_argv(fifo_fd);
@@ -68,7 +70,7 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, i
   cmd->cmd_args = calloc(cmd->arg_nb, sizeof(char *));
   cmd->cmd_args[0] = cmd->cmd_name;
   for(size_t i = 1; i < cmd->arg_nb; ++i) {
-    cmd->cmd_args[i+1] = datas[2+i];
+    cmd->cmd_args[i] = datas[2+i];
   }
   cmd->pid = 0;
   cmd->no = no;
@@ -126,17 +128,21 @@ struct command_list *get_next_command(struct command_list *cl) {
 }
 
 struct command_list *exec_commands(struct command_list *cl, struct command_list *next) {
-  // Execute next command
-  execute_command(next);
+  // Current time
+  long current_time = next->data->next_exec;
 
-  if(next->data->period == 0) {
-    cl = command_list_remove(cl, next->data);
+  while(next != NULL && next->data->next_exec == current_time) {
+    // Execute next command
+    execute_one_command(next);
+    
+    // Next process
+    next = next->next;
   }
 
   return cl;
 }
 
-void execute_command(struct command_list *cl) {
+void execute_one_command(struct command_list *cl) {
   // Execute command
   pid_t child_pid = fork_control();
   if(child_pid == 0) {
@@ -164,7 +170,7 @@ void execute_command(struct command_list *cl) {
   cl->data->next_exec = cl->data->next_exec + cl->data->period;
 }
 
-void wait_child(struct command_list *cl) {
+struct command_list *wait_child(struct command_list *cl) {
   while(cl != NULL) {
     if(cl->data->pid == 0) {
       continue;
@@ -186,8 +192,15 @@ void wait_child(struct command_list *cl) {
       fprintf(stderr, "Process %d terminated : signal number %d\n", pid, WTERMSIG(status));
     }
 
-    cl = cl->next;
+    // Remove the command with period 0
+    if(cl->data->period == 0) {
+      cl = command_list_remove(cl, cl->data);
+    } else {
+      cl = cl->next;
+    }
   }
+
+  return cl;
 }
 
 /* ---------- Main ---------- */
@@ -251,7 +264,7 @@ int main(int argc, char **argv) {
       chld_receive = 0;
 
       // Wait child
-      wait_child(all_cmds);
+      all_cmds = wait_child(all_cmds);
     }
 
     // -----> DEBUG
