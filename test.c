@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <time.h>
 #include "message.h"
 #include "controlsyscall.h"
 
@@ -23,7 +24,12 @@ int main(int argc, char **argv) {
 
     kill(pid, SIGUSR1);
 
-    char *datas[] = {"ls -l", "10", "5", NULL};
+    char start[21];
+    time_t tm = time(NULL) + 10;
+    perror_control(tm, "Get time (time)");
+    sprintf(start, "%ld", tm);
+
+    char *datas[] = {"date +%H:%M:%S", start, "0", NULL};
     send_argv(fifo_fd, datas);
   } else {
     fifo_fd = open_control("/tmp/period.fifo", O_RDONLY);
