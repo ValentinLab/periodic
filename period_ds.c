@@ -40,6 +40,9 @@ int command_cmp(const struct command *one, const struct command *two) {
 void command_destroy(struct command *self) {
   // Free datas
   free(self->cmd_name);
+  for(size_t i = 1; i < self->arg_nb; ++i) {
+    free(self->cmd_args[i]);
+  }
   free(self->cmd_args);
 
   // Free element

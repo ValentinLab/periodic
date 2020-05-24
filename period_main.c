@@ -75,6 +75,11 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, i
   cmd->pid = 0;
   cmd->no = no;
 
+  // Free memory
+  free(datas[0]);
+  free(datas[1]);
+  free(datas);
+
   // Add command to the list
   cl = command_list_add(cl, cmd);
   return cl;
@@ -131,9 +136,13 @@ struct command_list *exec_commands(struct command_list *cl, struct command_list 
   // Current time
   long current_time = next->data->next_exec;
 
+  // Execute next command which have the same 'next_exec'
   while(next != NULL && next->data->next_exec == current_time) {
     // Execute next command
     execute_one_command(next);
+
+    // Change position if it is needed
+      // WIP ...
     
     // Next process
     next = next->next;
@@ -171,19 +180,21 @@ void execute_one_command(struct command_list *cl) {
 }
 
 struct command_list *wait_child(struct command_list *cl) {
-  while(cl != NULL) {
-    if(cl->data->pid == 0) {
+  struct command_list *current = cl;
+  while(current != NULL) {
+    if(current->data->pid == 0) {
+      current = current->next;
       continue;
     }
 
     // Wait child
     int status;
-    pid_t pid = waitpid(cl->data->pid, &status, WNOHANG);
+    pid_t pid = waitpid(current->data->pid, &status, WNOHANG);
     if(pid == -1) {
       perror("Wait child (waitpid)");
       exit(EXIT_SYSCALL);
     }
-    cl->data->pid = 0;
+    current->data->pid = 0;
 
     // Save status
     if(WIFEXITED(status)) {
@@ -194,9 +205,12 @@ struct command_list *wait_child(struct command_list *cl) {
 
     // Remove the command with period 0
     if(cl->data->period == 0) {
-      cl = command_list_remove(cl, cl->data);
+      struct command *current_data = current->data;
+      current = current->next;
+
+      cl = command_list_remove(cl, current_data);
     } else {
-      cl = cl->next;
+      current = current->next;
     }
   }
 
