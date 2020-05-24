@@ -7,13 +7,14 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <fcntl.h>
 #include "controlsyscall.h"
 #include "message.h"
 
 #define PID_PATH "/tmp/period.pid"
 #define NAMED_PIPE_PATH "/tmp/period.fifo"
-#define MAX_PID_SIZE 4
+#define MAX_PID_SIZE 10
 
 /**
  * Permet de lire le pid dans un fichier
@@ -77,9 +78,10 @@ int main(int argc, char *argv[]) {
     int fd = open(NAMED_PIPE_PATH, O_WRONLY);
     perror_control(fd, "open named pipe (periodic)");
     char numArg[12];
-    sprintf(numArg, "%d", argc - 4);
+    sprintf(numArg, "%d", argc - 2);
     send_string(fd, numArg);
-    send_argv(fd, argv+1);
+
+    send_argv(fd, argv + 1);
     close(fd);
   }
 

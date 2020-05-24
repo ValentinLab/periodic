@@ -7,7 +7,7 @@ void handler(int sig);
 
 /* ---------- Functions ---------- */
 
-struct command_list *receive_new_command(int fifo_fd, struct command_list *cl);
+struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, int no);
 
 void send_all_commands(int fifo_fd, struct command_list *cl);
 

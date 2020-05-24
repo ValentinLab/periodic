@@ -3,11 +3,13 @@
 #include "period_main.h"
 #include "period_ds.h"
 #include "period_files.h"
+#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 #include "message.h"
@@ -47,24 +49,29 @@ void handler(int sig) {
 
 /* ---------- Functions ---------- */
 
-struct command_list *receive_new_command(int fifo_fd, struct command_list *cl) {
+struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, int no) {
   // Set flag to 0
   usr1_receive = 0;
 
-  // Get datas
-  char **datas = recv_argv(fifo_fd);
   struct command *cmd = malloc(sizeof(struct command));
 
+  // Get arguments number
+  cmd->arg_nb = atoi(recv_string(fifo_fd));
+
+  // Get datas
+  char **datas = recv_argv(fifo_fd);
+ 
   cmd->start = atol(datas[0]);
   cmd->period = atoi(datas[1]);
   cmd->next_exec = cmd->start;
   cmd->cmd_name = datas[2];
-  cmd->arg_nb = atoi(datas[3]);
   cmd->cmd_args = calloc(cmd->arg_nb, sizeof(char *));
-  for(size_t i = 0; i < cmd->arg_nb; ++i) {
-    cmd->cmd_args[i] = datas[4+i];
+  cmd->cmd_args[0] = cmd->cmd_name;
+  for(size_t i = 1; i < cmd->arg_nb; ++i) {
+    cmd->cmd_args[i+1] = datas[2+i];
   }
   cmd->pid = 0;
+  cmd->no = no;
 
   // Add command to the list
   cl = command_list_add(cl, cmd);
@@ -133,13 +140,26 @@ void execute_command(struct command_list *cl) {
   // Execute command
   pid_t child_pid = fork_control();
   if(child_pid == 0) {
+    // Redirections
+    int input = open_control("/dev/null", O_RDONLY);
+    dup2_control(input, 0);
+    char output_path[30];
+    sprintf(output_path, "/tmp/period/%d.out", cl->data->no);
+    int output = open_m_control(output_path, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    dup2_control(output, 1);
+    char errput_path[30];
+    sprintf(errput_path, "/tmp/period/%d.err", cl->data->no);
+    int errput = open_m_control(errput_path, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    dup2_control(errput, 2);
+
+    // Execution
     execvp(cl->data->cmd_name, cl->data->cmd_args);
 
     perror("Execute command (execvp)");
     exit(EXIT_SYSCALL);
   }
 
-  // Change data
+  // Change datas
   cl->data->pid = child_pid;
   cl->data->next_exec = cl->data->next_exec + cl->data->period;
 }
@@ -155,7 +175,7 @@ void wait_child(struct command_list *cl) {
     pid_t pid = waitpid(cl->data->pid, &status, WNOHANG);
     if(pid == -1) {
       perror("Wait child (waitpid)");
-      return EXIT_SYSCALL;
+      exit(EXIT_SYSCALL);
     }
     cl->data->pid = 0;
 
@@ -178,6 +198,9 @@ int main(int argc, char **argv) {
   //output_redirections();
   int fifo = create_fifo();
   create_directory();
+
+  // Command number
+  int last_insert_no = 1;
 
   // Handler installation
   struct sigaction action;
@@ -203,7 +226,8 @@ int main(int argc, char **argv) {
     // SIGUSR1
     if(usr1_receive == 1) {
       // Get command
-      all_cmds = receive_new_command(fifo, all_cmds);
+      all_cmds = receive_new_command(fifo, all_cmds, last_insert_no);
+      ++last_insert_no;
 
       // Set alarm
       next = get_next_command(all_cmds);
@@ -219,7 +243,7 @@ int main(int argc, char **argv) {
       alrm_receive = 0;
 
       // Execute command
-      exec_commands(all_cmds, next);
+      all_cmds = exec_commands(all_cmds, next);
     }
     // SIGCHLD
     if(chld_receive == 1) {

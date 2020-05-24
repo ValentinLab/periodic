@@ -13,6 +13,7 @@ struct command {
   long start;
   long next_exec;
   pid_t pid;
+  int no;
 };
 
 void command_dump(const struct command *self);

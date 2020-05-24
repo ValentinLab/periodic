@@ -9,11 +9,15 @@
 
 void command_dump(const struct command *self) {
   if(self == NULL) {
-    printf("-NULL-");
+    printf("(empty)");
     return;
   }
 
-  printf("'%s' : %ld : %d : %ld\n", self->cmd_name, self->start, self->period, self->next_exec);
+  printf("' %s ", self->cmd_name);
+  for(size_t i = 1; i < self->arg_nb-1; ++i) {
+    printf("%s ", self->cmd_args[i]);
+  }
+  printf("' : %ld : %d : %ld\n", self->start, self->period, self->next_exec);
 }
 
 int command_cmp(const struct command *one, const struct command *two) {
@@ -91,7 +95,6 @@ struct command_list *command_list_remove(struct command_list *self, struct comma
 
 void command_list_dump(const struct command_list *self) {
   if(self == NULL) {
-    printf("--NULL--");
     return;
   }
 
