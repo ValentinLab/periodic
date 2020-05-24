@@ -54,10 +54,17 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl) {
   // Get datas
   char **datas = recv_argv(fifo_fd);
   struct command *cmd = malloc(sizeof(struct command));
-  cmd->cmd = datas[0];
-  cmd->start = atol(datas[1]);
-  cmd->period = atoi(datas[2]);
+
+  cmd->start = atol(datas[0]);
+  cmd->period = atoi(datas[1]);
   cmd->next_exec = cmd->start;
+  cmd->cmd_name = datas[2];
+  cmd->arg_nb = atoi(datas[3]);
+  cmd->cmd_args = calloc(cmd->arg_nb, sizeof(char *));
+  for(size_t i = 0; i < cmd->arg_nb; ++i) {
+    cmd->cmd_args[i] = atoi(datas[4+i]);
+  }
+  cmd->pid = 0;
 
   // Add command to the list
   cl = command_list_add(cl, cmd);
@@ -65,22 +72,31 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl) {
 }
 
 void send_all_commands(int fifo_fd, struct command_list *cl) {
-  char *current_cmd[4];
+  // Send commands
   while(cl != NULL) {
     char start[20];
     sprintf(start, "%ld", cl->data->start);
     char period[11];
     sprintf(period, "%d", cl->data->period);
 
-    current_cmd[0] = cl->data->cmd;
-    current_cmd[1] = start;
-    current_cmd[2] = period;
-    current_cmd[3] = NULL;
+    char **current_cmd = calloc(4 + cl->data->arg_nb, sizeof(char *));
+
+    current_cmd[0] = start;
+    current_cmd[1] = period;
+    current_cmd[2] = cl->data->cmd_name;
+    current_cmd[3] = cl->data->arg_nb;
+    for(size_t i = 0; i < cl->data->arg_nb; ++i) {
+      current_cmd[4+i] = cl->data->cmd_args[i];
+    }
 
     send_argv(fifo_fd, current_cmd);
 
     cl = cl->next;
   }
+
+  // Stop sending
+  char *final_sending[] = {NULL};
+  send_argv(fifo_fd, final_sending);
 }
 
 struct command_list *get_next_command(struct command_list *cl) {

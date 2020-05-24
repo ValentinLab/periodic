@@ -1,13 +1,18 @@
 #ifndef PERIOD_DS_H
 #define PERIOD_DS_H
 
+#include <sys/types.h>
+
 /* ---------- Command structure ---------- */
 
 struct command {
-  char *cmd;
+  char *cmd_name;
+  char **cmd_args;
+  int arg_nb;
   int period;
   long start;
   long next_exec;
+  pid_t pid;
 };
 
 void command_dump(const struct command *self);
