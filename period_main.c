@@ -115,37 +115,36 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
   send_argv(fifo_fd, final_sending);
 }
 
-struct command_list *get_next_command(struct command_list *cl) {
+void get_next_command(struct command_list *cl) {
   // Get current time
   time_t now = time(NULL);
   perror_control(now, "Get time (time)");
 
   // Check data structure
   if(cl == NULL) {
-    return NULL;
+    return;
   }
 
   // Set alarm
   unsigned int alarm_time = cl->data->next_exec - now;
   alarm(alarm_time);
-
-  return cl;
 }
 
-struct command_list *exec_commands(struct command_list *cl, struct command_list *next) {
+struct command_list *exec_commands(struct command_list *cl) {
   // Current time
-  long current_time = next->data->next_exec;
+  long current_time = cl->data->next_exec;
 
   // Execute next command which have the same 'next_exec'
-  while(next != NULL && next->data->next_exec == current_time) {
+  struct command_list *current = cl;
+  while(current != NULL && current->data->next_exec == current_time) {
     // Execute next command
-    execute_one_command(next);
+    execute_one_command(current);
 
     // Change position if it is needed
       // WIP ...
     
     // Next process
-    next = next->next;
+    current = current->next;
   }
 
   return cl;
@@ -244,7 +243,6 @@ int main(int argc, char **argv) {
 
   // Create list of commands
   struct command_list *all_cmds = NULL;
-  struct command_list *next = NULL;
 
   // Pause until signals
   while(on_progress) {
@@ -257,7 +255,7 @@ int main(int argc, char **argv) {
       ++last_insert_no;
 
       // Set alarm
-      next = get_next_command(all_cmds);
+      get_next_command(all_cmds);
     }
     // SIGUSR2
     if(usr2_receive == 1) {
@@ -270,7 +268,7 @@ int main(int argc, char **argv) {
       alrm_receive = 0;
 
       // Execute command
-      all_cmds = exec_commands(all_cmds, next);
+      all_cmds = exec_commands(all_cmds);
     }
     // SIGCHLD
     if(chld_receive == 1) {
