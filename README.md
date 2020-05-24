@@ -20,7 +20,7 @@ Le programme `period`
 - [X] Exercice 8
 - [X] Exercice 9
 - [ ] Exercice 10
-- [ ] Exercice 11
+- [X] Exercice 11
 - [X] Exercice 12
 - [X] Exercice 13
 
