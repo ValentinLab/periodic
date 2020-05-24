@@ -144,16 +144,29 @@ void execute_command(struct command_list *cl) {
   cl->data->next_exec = cl->data->next_exec + cl->data->period;
 }
 
-void wait_child() {
-  // Wait child
-  int status;
-  pid_t pid = wait_control(&status);
+void wait_child(struct command_list *cl) {
+  while(cl != NULL) {
+    if(cl->data->pid == 0) {
+      continue;
+    }
 
-  // Save status
-  if(WIFEXITED(status)) {
-    fprintf(stderr, "Process %d terminated : exit status %d\n", pid, WEXITSTATUS(status));
-  } else if(WIFSIGNALED(status)) {
-    fprintf(stderr, "Process %d terminated : signal number %d\n", pid, WTERMSIG(status));
+    // Wait child
+    int status;
+    pid_t pid = waitpid(cl->data->pid, &status, WNOHANG);
+    if(pid == -1) {
+      perror("Wait child (waitpid)");
+      return EXIT_SYSCALL;
+    }
+    cl->data->pid = 0;
+
+    // Save status
+    if(WIFEXITED(status)) {
+      fprintf(stderr, "Process %d terminated : exit status %d\n", pid, WEXITSTATUS(status));
+    } else if(WIFSIGNALED(status)) {
+      fprintf(stderr, "Process %d terminated : signal number %d\n", pid, WTERMSIG(status));
+    }
+
+    cl = cl->next;
   }
 }
 
@@ -214,7 +227,7 @@ int main(int argc, char **argv) {
       chld_receive = 0;
 
       // Wait child
-      wait_child();
+      wait_child(all_cmds);
     }
 
     // -----> DEBUG
