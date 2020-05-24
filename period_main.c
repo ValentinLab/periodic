@@ -62,7 +62,7 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl) {
   cmd->arg_nb = atoi(datas[3]);
   cmd->cmd_args = calloc(cmd->arg_nb, sizeof(char *));
   for(size_t i = 0; i < cmd->arg_nb; ++i) {
-    cmd->cmd_args[i] = atoi(datas[4+i]);
+    cmd->cmd_args[i] = datas[4+i];
   }
   cmd->pid = 0;
 
@@ -78,13 +78,15 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     sprintf(start, "%ld", cl->data->start);
     char period[11];
     sprintf(period, "%d", cl->data->period);
+    char arg_nb[11];
+    sprintf(arg_nb, "%d", cl->data->arg_nb);
 
     char **current_cmd = calloc(4 + cl->data->arg_nb, sizeof(char *));
 
     current_cmd[0] = start;
     current_cmd[1] = period;
     current_cmd[2] = cl->data->cmd_name;
-    current_cmd[3] = cl->data->arg_nb;
+    current_cmd[3] = arg_nb;
     for(size_t i = 0; i < cl->data->arg_nb; ++i) {
       current_cmd[4+i] = cl->data->cmd_args[i];
     }
@@ -128,40 +130,17 @@ struct command_list *exec_commands(struct command_list *cl, struct command_list 
 }
 
 void execute_command(struct command_list *cl) {
-  // Extract command and arguments
-  size_t sz = 0;
-  size_t index = 0;
-  while(cl->data->cmd[index] != '\0') {
-    if(cl->data->cmd[index] == ' ') {
-      ++sz;
-    }
-    ++index;
-  }
-  sz += 2; // last word and NULL
-  char **cmd = calloc(sz+2, sizeof(char *));
-  char *token = calloc(255, sizeof(char));
-  strcpy(token, cl->data->cmd);
-  token = strtok(token, " ");
-  index = 0;
-  while(token != NULL) {
-    cmd[index++] = token;
-    token = strtok(NULL, " ");
-  }
-
   // Execute command
   pid_t child_pid = fork_control();
   if(child_pid == 0) {
-    execvp(cmd[0], cmd);
+    execvp(cl->data->cmd_name, cl->data->cmd_args);
 
     perror("Execute command (execvp)");
     exit(EXIT_SYSCALL);
   }
 
-  // Free datas
-  free(cmd);
-  free(token);
-
   // Change data
+  cl->data->pid = child_pid;
   cl->data->next_exec = cl->data->next_exec + cl->data->period;
 }
 

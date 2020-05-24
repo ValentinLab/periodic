@@ -13,19 +13,35 @@ void command_dump(const struct command *self) {
     return;
   }
 
-  printf("'%s' : %ld : %d : %ld\n", self->cmd, self->start, self->period, self->next_exec);
+  printf("'%s' : %ld : %d : %ld\n", self->cmd_name, self->start, self->period, self->next_exec);
 }
 
 int command_cmp(const struct command *one, const struct command *two) {
-  int cmd = strcmp(one->cmd, two->cmd);
+  int cmd = strcmp(one->cmd_name, two->cmd_name);
   int start = one->start - two->start;
   int period = one->period - two->period;
 
-  return cmd + start + period;
+  int args = 0;
+  if(one->arg_nb == two->arg_nb) {
+    for(size_t i = 0; i < one->arg_nb; ++i) {
+      args += strcmp(one->cmd_args[i], two->cmd_args[i]);
+    }
+  } else {
+    args = one->arg_nb - two->arg_nb;
+  }
+
+  return cmd + start + period + args;
 }
 
 void command_destroy(struct command *self) {
-  free(self->cmd);
+  // Free datas
+  free(self->cmd_name);
+  for(size_t i = 0; i < self->arg_nb; ++i) {
+    free(self->cmd_args[i]);
+  }
+  free(self->cmd_args);
+
+  // Free element
   free(self);
 }
 
