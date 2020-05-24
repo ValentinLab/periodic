@@ -33,6 +33,8 @@ struct command_list *command_list_add(struct command_list *self, struct command 
 
 struct command_list *command_list_remove(struct command_list *self, struct command *data);
 
+struct command_list *command_list_replace(struct command_list *self);
+
 void command_list_dump(const struct command_list *self);
 
 void command_list_destroy(struct command_list *self);

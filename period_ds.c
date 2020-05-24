@@ -80,6 +80,15 @@ struct command_list *command_list_remove(struct command_list *self, struct comma
     }
   }
 
+  if(command_cmp(self->data, data) == 0) {
+    command_destroy(data);
+    struct command_list *tmp = self;
+    self = tmp->next;
+    free(tmp);
+
+    return self;
+  }
+
   if(command_cmp(self->next->data, data) == 0) {
     command_destroy(data);
     struct command_list *tmp = self->next;
@@ -90,6 +99,17 @@ struct command_list *command_list_remove(struct command_list *self, struct comma
   }
 
   self->next = command_list_remove(self->next, data);
+  return self;
+}
+
+struct command_list *command_list_replace(struct command_list *self) {
+  struct command *current_data = self->data;
+  struct command_list *tmp = self;
+  self = self->next;
+  free(tmp);
+
+  self = command_list_add(self, current_data);
+
   return self;
 }
 

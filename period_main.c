@@ -127,6 +127,10 @@ void get_next_command(struct command_list *cl) {
 
   // Set alarm
   unsigned int alarm_time = cl->data->next_exec - now;
+  if(alarm_time == 0) {
+    alrm_receive = 1;
+    return;
+  }
   alarm(alarm_time);
 }
 
@@ -141,7 +145,11 @@ struct command_list *exec_commands(struct command_list *cl) {
     execute_one_command(current);
 
     // Change position if it is needed
-      // WIP ...
+    if(current->next != NULL && current->data->next_exec > current->next->data->next_exec) {
+      current = current->next;
+
+      cl = command_list_replace(cl);
+    }
     
     // Next process
     current = current->next;
@@ -221,7 +229,7 @@ struct command_list *wait_child(struct command_list *cl) {
 int main(int argc, char **argv) {
   // Save PID in a file, create a named pipe and a period directory
   write_pid();
-  //output_redirections();
+  output_redirections();
   int fifo = create_fifo();
   create_directory();
 
@@ -269,6 +277,7 @@ int main(int argc, char **argv) {
 
       // Execute command
       all_cmds = exec_commands(all_cmds);
+      get_next_command(all_cmds);
     }
     // SIGCHLD
     if(chld_receive == 1) {
