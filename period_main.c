@@ -98,7 +98,7 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     char arg_nb[11];
     sprintf(arg_nb, "%d", cl->data->arg_nb);
 
-    char **current_cmd = calloc(5 + cl->data->arg_nb, sizeof(char *));
+    char **current_cmd = calloc(5 + cl->data->arg_nb-2, sizeof(char *));
 
     current_cmd[0] = no_command;
     current_cmd[1] = start;

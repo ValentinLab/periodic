@@ -24,10 +24,12 @@ int command_cmp(const struct command *one, const struct command *two) {
   assert(one != NULL);
   assert(two != NULL);
 
+  // Compare name, start and period
   int cmd = strcmp(one->cmd_name, two->cmd_name);
   int start = one->start - two->start;
   int period = one->period - two->period;
 
+  // Compare arguments
   int args = 0;
   if(one->arg_nb == two->arg_nb) {
     for(size_t i = 0; i < one->arg_nb-1; ++i) {
@@ -59,6 +61,7 @@ void command_destroy(struct command *self) {
 struct command_list *command_list_add(struct command_list *self, struct command *data) {
   assert(data != NULL);
 
+  // Insert at the right position
   if(self == NULL || data->next_exec < self->data->next_exec) {
     struct command_list *new_node = malloc(sizeof(struct command_list));
     new_node->data = data;
@@ -67,6 +70,7 @@ struct command_list *command_list_add(struct command_list *self, struct command 
     return new_node;
   }
 
+  // Cross the structure
   self->next = command_list_add(self->next, data);
   return self;
 }
@@ -74,10 +78,12 @@ struct command_list *command_list_add(struct command_list *self, struct command 
 struct command_list *command_list_remove(struct command_list *self, struct command *data) {
   assert(data != NULL);
 
+  // Stop if the end of the list is reached
   if(self == NULL) {
     return NULL;
   }
 
+  // Remove if it's the current element
   if(command_cmp(self->data, data) == 0) {
     command_destroy(data);
     struct command_list *tmp = self;
@@ -87,6 +93,7 @@ struct command_list *command_list_remove(struct command_list *self, struct comma
     return self;
   }
 
+  // Remove if it's the next element
   if(self->next != NULL && command_cmp(self->next->data, data) == 0) {
     command_destroy(data);
     struct command_list *tmp = self->next;
@@ -96,6 +103,7 @@ struct command_list *command_list_remove(struct command_list *self, struct comma
     return self;
   }
 
+  // Cross the structure
   self->next = command_list_remove(self->next, data);
   return self;
 }
@@ -103,10 +111,12 @@ struct command_list *command_list_remove(struct command_list *self, struct comma
 struct command_list *command_list_remove_by_nb(struct command_list *self, const int command_no) {
   assert(command_no > 0);
 
+  // Stop if the end of the list is reached
   if(self == NULL) {
     return NULL;
   }
 
+  // Remove if it's the current element
   if(self->data->no == command_no) {
     if(self->data->pid == 0) { // not in progress
       command_destroy(self->data);
@@ -120,6 +130,7 @@ struct command_list *command_list_remove_by_nb(struct command_list *self, const 
     return self;
   }
 
+  // Remove if it's the next element
   if(self->next != NULL && self->next->data->no == command_no) {
     if(self->data->pid == 0) { // not in execution
       command_destroy(self->next->data);
@@ -133,15 +144,18 @@ struct command_list *command_list_remove_by_nb(struct command_list *self, const 
     return self;
   }
 
+  // Cross the structure
   self->next = command_list_remove_by_nb(self->next, command_no);
   return self;
 }
 
 struct command_list *command_list_replace(struct command_list *self) {
+  // Stop if the end of the list is reached
   if(self == NULL) {
     return NULL;
   }
 
+  // Move the data
   struct command *current_data = self->data;
   struct command_list *tmp = self;
   self = self->next;
