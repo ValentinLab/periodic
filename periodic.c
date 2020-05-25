@@ -96,9 +96,7 @@ int main(int argc, char *argv[]) {
     if(strcmp(argv[1], "now") == 0) {
       time_t now = time(NULL);
       perror_control(now, "Get time (time)");
-      char *str;
-      sprintf(str, "%ld", now);
-      argv[1] = str;
+      sprintf(argv[1], "%ld", now);
     } else{
       strtol(argv[1], test_start, 10);
       if(strcmp(*test_start, "\0") != 0) {
