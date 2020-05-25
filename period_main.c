@@ -104,8 +104,8 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     current_cmd[1] = start;
     current_cmd[2] = period;
     current_cmd[3] = cl->data->cmd_name;
-    current_cmd[4] = arg_nb;
-    for(size_t i = 0; i < cl->data->arg_nb; ++i) {
+    current_cmd[4] = arg_nb-2;
+    for(size_t i = 1; i < cl->data->arg_nb-1; ++i) {
       current_cmd[5+i] = cl->data->cmd_args[i];
     }
 
@@ -115,7 +115,7 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
   }
 
   // Stop sending
-  char *final_sending[] = {NULL};
+  char *final_sending[] = {"NULL"};
   send_argv(fifo_fd, final_sending);
 }
 
