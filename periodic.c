@@ -16,26 +16,32 @@
 #define NAMED_PIPE_PATH "/tmp/period.fifo"
 #define GENERIC_USAGE "usage : ./periodic start period cmd [args]...\nusage : ./periodic cmd_number\nusage : ./periodic\n"
 
+/* ---------- Functions ---------- */
+
 /**
- * Permet de lire le pid dans un fichier
+ * Read period's PID in a file
  * 
- * @param path Le chemin vers le fichier
- * @return Renvoie le pid ou -1 si le fichier n'existe pas
+ * @param path Path to file
+ * @return Period's PID or -1
  */ 
 int read_pid(char *path) {
+  // Open file
   FILE* file = fopen_control(path, "r");
   char pid[12];
 
+  // Read value
   fgets(pid, 12, file);
   fclose_control(file);
-
-  printf("pid of period : %s\n", pid);
   
   return atoi(pid);
 }
 
 /**
- * Permet d'envoyer un signal au process celon le PID en paramétre
+ * Send a signal to a process
+ * 
+ * @param pid Process's PID
+ * @param signal Signal to send
+ * @return Kill returned value
  */ 
 int send_signal (int pid, int signal) {
   int res = kill(pid, signal);
@@ -43,11 +49,17 @@ int send_signal (int pid, int signal) {
   return res;
 }
 
+/**
+ * Check if a string contains a long number
+ * 
+ * @param str String to check
+ * @param err Error to display
+ * @return Str transformed into a long
+ */
 long is_long(char *str, char *err) {
   char **endptr = calloc(strlen(str), sizeof(char *));
   long result = strtol(str, endptr, 10);
   if(strcmp(*endptr, "\0") != 0) {
-    fprintf(stderr,"invalid %s\n%s", err, GENERIC_USAGE);
     free(endptr);
     exit(EXIT_FAILURE);
   }
@@ -60,6 +72,8 @@ long is_long(char *str, char *err) {
 
   return result;
 }
+
+/* ---------- Main ---------- */
 
 int main(int argc, char *argv[]) {
   if (argc <= 0 || argc == 3) {
@@ -120,35 +134,62 @@ int main(int argc, char *argv[]) {
     send_string(fd, argv[1]);
     close_control(fd);
   } else {  // Si il y a 3 arguments au moins
-    if(strcmp(argv[1], "now") == 0) {
-      time_t now = time(NULL);
-      sprintf(argv[1], "%ld", now);
-    } else{
+    // Memory allocation for the new array
+    char **to_send = calloc(argc - 2, sizeof(char *));
+
+    // 1. Start
+    time_t start_time = time(NULL);
+    perror_control(start_time, "Get current time (time)");
+    if(strcmp(argv[1], "now") != 0) {
       long start = is_long(argv[1], "start");
-      time_t next_time = time(NULL) + start;
-      sprintf(argv[1], "%ld", next_time);
+      if(argv[1][0] == '+') {
+        start_time += start;
+      } else {
+        if(start < start_time) {
+          fprintf(stderr, "Error : you can't use past time\n");
+          return EXIT_FAILURE;
+        }
+        start_time = start;
+      }
     }
+    to_send[0] = calloc(20, sizeof(char));
+    sprintf(to_send[0], "%ld", start_time);
 
+    // 2. Period
     long period = is_long(argv[2], "period");
+    to_send[1] = calloc(20, sizeof(char));
+    sprintf(to_send[1], "%ld", period);
 
-    sprintf(argv[2], "%ld", period);
-
-    perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 2)");
-
+    // Open pipe
     int fd = open(NAMED_PIPE_PATH, O_WRONLY);
     perror_control(fd, "open (periodic - 3)");
 
-    // Define the period in add mod
+    // Define period to "add mod"
     send_string(fd, "0");
 
-    // Send argument size
+    // Send arguments number
     char numArg[12];
     sprintf(numArg, "%d", argc - 2);
-
     send_string(fd, numArg);
-    send_argv(fd, argv+1);
+
+    // Send command datas
+    for(size_t i = 2; i < argc-1; ++i) {
+      fprintf(stderr, "%ld : %s\n", i, argv[i+1]);
+      to_send[i] = calloc(strlen(argv[i+1]), sizeof(char));
+      strcpy(to_send[i], argv[i+1]);
+      fprintf(stderr, "--\n");
+    }
+    send_argv(fd, to_send);
 
     close_control(fd);
+
+    // Send SIGUSR1 to period
+    perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 2)");
+
+    // Free memory
+    free(to_send[0]);
+    free(to_send[1]);
+    free(to_send);
   }
 
   return EXIT_SUCCESS;
