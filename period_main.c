@@ -115,8 +115,11 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
   }
 
   // Stop sending
-  char *final_sending[] = {"NULL"};
-  send_argv(fifo_fd, final_sending);
+  char *final_sending[2];
+  final_sending[0] = "NULL";
+  final_sending[1] = NULL;
+  //send_argv(fifo_fd, final_sending);
+  printf("test");
 }
 
 void get_next_command(struct command_list *cl) {
@@ -312,6 +315,7 @@ int main(int argc, char **argv) {
     if(usr2_receive == 1) {
       char *value_str = recv_string(fifo);
       int value = atoi(value_str);
+      printf("value: %d", value);
       free(value_str);
 
       if(value <= 0) {

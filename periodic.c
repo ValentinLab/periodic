@@ -14,7 +14,7 @@
 
 #define PID_PATH "/tmp/period.pid"
 #define NAMED_PIPE_PATH "/tmp/period.fifo"
-#define MAX_PID_SIZE 10
+#define MAX_PID_SIZE 4
 
 /**
  * Permet de lire le pid dans un fichier
@@ -56,13 +56,16 @@ int main(int argc, char *argv[]) {
   perror_control(pid, "Can't read PID (periodic)");
 
   if (argc == 1) { // Si il y a 0 argument
-    int fd = open(NAMED_PIPE_PATH, O_RDONLY);
+    int fd = open(NAMED_PIPE_PATH, O_RDWR);
     perror_control(fd, "open named pipe (periodic)");
 
     perror_control(send_signal(pid, SIGUSR2), "Can't send SIGUSR2 (periodic)");
+    send_string(fd, "0");
     printf("Registred command : \n");
-    char **res = recv_argv(fd);
-    while (res != NULL) {
+    //char **res = recv_argv(fd);
+    //printf("res: %s\n", res[0]);
+    /*
+    while (!strcmp(res[0], "NULL")) {
       int i = 0;
       while (res[i] != NULL) {
         printf("%s ", res[i]);
@@ -71,6 +74,7 @@ int main(int argc, char *argv[]) {
       printf("\n");
       res = recv_argv(fd);
     }
+    */
     close(fd);
   } else {  // Si il y a 3 arguments au moins
     perror_control(send_signal(pid, SIGUSR1), "Can't send SIGUSR1 (periodic)");
