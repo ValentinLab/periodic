@@ -143,6 +143,11 @@ void get_next_command(struct command_list *cl) {
 }
 
 struct command_list *exec_commands(struct command_list *cl) {
+  // Check if command list is empty
+  if(cl == NULL) {
+    return NULL;
+  }
+
   // Current time
   long current_time = cl->data->next_exec;
 
@@ -314,6 +319,8 @@ int main(int argc, char **argv) {
       char *value_str = recv_string(fifo);
       int value = atoi(value_str);
       free(value_str);
+
+      fprintf(stderr, "\t-> %d\n", value);
 
       if(value <= 0) { // add command
         // Get command
