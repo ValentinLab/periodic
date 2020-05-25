@@ -61,6 +61,13 @@ void execute_one_command(struct command_list *cl);
 struct command_list *wait_child();
 
 /**
+ * Kill all period's children
+ * 
+ * @param cl Pointer to the list of commands
+ */
+void kill_children(struct command_list *cl);
+
+/**
  * Function called at normal process termination
  * Removes /tmp/period.pid"
  */

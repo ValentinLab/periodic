@@ -237,6 +237,19 @@ struct command_list *wait_child(struct command_list *cl) {
   return cl;
 }
 
+void kill_children(struct command_list *cl) {
+  int ret = 0;
+  while(cl != NULL) {
+    if(cl->data->pid != 0) {
+      ret = kill(cl->data->pid, SIGTERM);
+      if(ret == -1) {
+        perror("Kill child for period termination (kill)");
+      }
+    }
+    cl = cl->next;
+  }
+}
+
 void exit_period() {
   int ret = unlink("/tmp/period.pid");
   perror_control(ret, "Suppression d'un fichier (unlink)");
@@ -321,6 +334,7 @@ int main(int argc, char **argv) {
 
   // Fin du programme
   close_control(fifo);
+  kill_children(all_cmds);
   command_list_destroy(all_cmds);
 
   return EXIT_SUCCESS;
