@@ -14,7 +14,7 @@
 
 #define PID_PATH "/tmp/period.pid"
 #define NAMED_PIPE_PATH "/tmp/period.fifo"
-#define MAX_PID_SIZE 4
+#define MAX_PID_SIZE 6
 
 /**
  * Permet de lire le pid dans un fichier
