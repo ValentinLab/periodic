@@ -287,9 +287,6 @@ int main(int argc, char **argv) {
       // Wait child
       all_cmds = wait_child(all_cmds);
     }
-
-    // -----> DEBUG
-    command_list_dump(all_cmds);
   }
 
   // Fin du programme
