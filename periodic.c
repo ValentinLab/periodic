@@ -96,11 +96,20 @@ int main(int argc, char *argv[]) {
     if(strcmp(argv[1], "now") == 0) {
       time_t now = time(NULL);
       perror_control(now, "Get time (time)");
-      char *str;
+      char *str = calloc(20, sizeof(char));
       sprintf(str, "%ld", now);
       argv[1] = str;
     } else{
-      strtol(argv[1], test_start, 10);
+      if(argv[1][0] == '+') {
+        time_t now = time(NULL) + atol(argv[1]);
+        perror_control(now, "Get time (time)");
+        char *str = calloc(20, sizeof(char));
+        sprintf(str, "%ld", now);
+        argv[1] = str;
+      } else {
+        strtol(argv[1], test_start, 10);
+      }
+      
       if(strcmp(*test_start, "\0") != 0) {
         fprintf(stderr,"invalid start\nusage : ./periodic start period cmd [args]...\nusage : ./periodic\n");
         free(test_start);

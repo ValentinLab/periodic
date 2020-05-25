@@ -76,7 +76,7 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, i
   cmd->pid = 0;
   cmd->no = no;
 
-  fprintf(stderr, "%d - %d - %s", cmd->start, cmd->period, cmd->cmd_name);
+  fprintf(stderr, "%ld - %d - %s", cmd->start, cmd->period, cmd->cmd_name);
 
   // Free memory of string transformed into numbers
   free(datas[0]);
