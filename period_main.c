@@ -105,7 +105,7 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     current_cmd[2] = period;
     current_cmd[3] = cl->data->cmd_name;
     current_cmd[4] = arg_nb-2;
-    for(size_t i = 1; i < cl->data->arg_nb-1; ++i) {
+    for(size_t i = 1; i < cl->data->arg_nb; ++i) {
       current_cmd[5+i] = cl->data->cmd_args[i];
     }
 
@@ -115,7 +115,9 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
   }
 
   // Stop sending
-  char *final_sending[] = {"NULL"};
+  char *final_sending[2];
+  final_sending[0] = "NULL";
+  final_sending[1] = NULL;
   send_argv(fifo_fd, final_sending);
 }
 
@@ -269,7 +271,7 @@ void exit_period() {
 int main(int argc, char **argv) {
   // Save PID in a file, create a named pipe and a period directory
   write_pid();
-  output_redirections();
+  // output_redirections();
   int fifo = create_fifo();
   create_directory();
 
