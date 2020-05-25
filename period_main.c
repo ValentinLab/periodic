@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
         // Set alarm
         get_next_command(all_cmds);
       } else {
-        // Remove the command no value
+        // Remove a command
         all_cmds = command_list_remove_by_nb(all_cmds, value);
       }
     }
