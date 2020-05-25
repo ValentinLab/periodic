@@ -95,8 +95,6 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     sprintf(start, "%ld", cl->data->start);
     char period[11];
     sprintf(period, "%d", cl->data->period);
-    char arg_nb[11];
-    sprintf(arg_nb, "%d", cl->data->arg_nb-2);
 
     // Create the array to send
     char **current_cmd = calloc(5 + cl->data->arg_nb-1, sizeof(char *));
@@ -104,7 +102,6 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     current_cmd[1] = start;
     current_cmd[2] = period;
     current_cmd[3] = cl->data->cmd_name;
-    current_cmd[4] = arg_nb;
     for(size_t i = 1; i < cl->data->arg_nb; ++i) {
       current_cmd[4+i] = cl->data->cmd_args[i];
     }
@@ -319,8 +316,6 @@ int main(int argc, char **argv) {
       char *value_str = recv_string(fifo);
       int value = atoi(value_str);
       free(value_str);
-
-      fprintf(stderr, "\t-> %d\n", value);
 
       if(value <= 0) { // add command
         // Get command

@@ -76,37 +76,47 @@ long is_long(char *str, char *err) {
 /* ---------- Main ---------- */
 
 int main(int argc, char *argv[]) {
+  // Check arguments number
   if (argc <= 0 || argc == 3) {
-    fprintf(stderr,"invalid arguments\n%s", GENERIC_USAGE);
+    fprintf(stderr,"Error : Invalid arguments\n%s", GENERIC_USAGE);
     return EXIT_FAILURE;
   }
   
-  // Try to read the pid of period
+  // Try to read period's PID
   int pid = read_pid(PID_PATH);
   perror_control(pid, "can't read PID (periodic)");
 
-  if (argc == 1) { // Si il y a 0 argument
+  // Make action
+  if (argc == 1) {
+    // -> 0 argument : list all registrated commands
+
+    // Open pipe
     int fd = open(NAMED_PIPE_PATH, O_RDWR);
     perror_control(fd, "open (periodic - 1)");
 
+    // Send SIGURS2 to period
     perror_control(send_signal(pid, SIGUSR2), "can't send SIGUSR2 (periodic)");
     char **res = recv_argv(fd);
-    
-    if(strcmp(res[0], "NULL") == 0) {
-      printf("List of command is empty.\n");
+
+    // Print commands
+    printf("List of regitrated commands :\n\n");
+    if(strcmp(res[0], "NULL") == 0) { // 0 commands
+      printf("Nothing to print.\n");
       free(res[0]);
       free(res);
-    } else {
-      printf("Registred command :\n");
-      printf("N°|start|period|cmd|args\n");
+    } else { // one or more commands
+      printf(" N° |    start    | period | cmd\n");
       while (strcmp(res[0], "NULL") != 0) {
-        int i = 0;
+        int no = atoi(res[0]);
+        free(res[0]);
+        int start = atol(res[1]);
+        free(res[1]);
+        int period = atol(res[2]);
+        free(res[2]);
+        printf(" %02d   %011d    %04d    ", no, start, period);
+        int i = 3;
         while (res[i] != NULL) {
-          if(i == 0) {
-            printf("%s - ", res[i]);
-          } else {
-            printf("%s ", res[i]);
-          }
+          printf("%s ", res[i]);
           free(res[i]);
           i++;
         }
