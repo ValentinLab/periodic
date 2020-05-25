@@ -14,7 +14,7 @@
 
 #define PID_PATH "/tmp/period.pid"
 #define NAMED_PIPE_PATH "/tmp/period.fifo"
-#define MAX_PID_SIZE 4
+#define MAX_PID_SIZE 6
 
 /**
  * Permet de lire le pid dans un fichier
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     perror_control(send_signal(pid, SIGUSR2), "Can't send SIGUSR2 (periodic)");
     send_string(fd, "0");
     printf("Registred command :\n");
-    printf("N°|start|period|cmd|args\n");
+    printf("N°-start|period|cmd|args\n");
     char **res = recv_argv(fd);
     
     while (strcmp(res[0], "NULL") != 0) {
