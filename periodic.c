@@ -81,9 +81,12 @@ int main(int argc, char *argv[]) {
           i++;
         }
         printf("\n");
+        free(res[i]);
         free(res);
         res = recv_argv(fd);
       }
+      free(res[0]);
+      free(res);
     }
     close_control(fd);
   } else {  // Si il y a 3 arguments au moins
@@ -91,7 +94,11 @@ int main(int argc, char *argv[]) {
     char **test_period = calloc(strlen(argv[2]), sizeof(char *));
     
     if(strcmp(argv[1], "now") == 0) {
-      argv[0] = "0";
+      time_t now = time(NULL);
+      perror_control(now, "Get time (time)");
+      char *str;
+      sprintf(str, "%ld", now);
+      argv[1] = str;
     } else{
       strtol(argv[1], test_start, 10);
       if(strcmp(*test_start, "\0") != 0) {
