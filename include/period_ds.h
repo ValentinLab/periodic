@@ -63,6 +63,15 @@ struct command_list *command_list_add(struct command_list *self, struct command 
 struct command_list *command_list_remove(struct command_list *self, struct command *data);
 
 /**
+ * Remove a data with number command_no from the list of commands
+ * 
+ * @param self Pointer to the list of commands
+ * @param command_no Number of the command
+ * @return Pointer to the list without data
+ */
+struct command_list *command_list_remove_by_nb(struct command_list *self, const int command_no);
+
+/**
  * Replace the first element
  * If the first element isn't at the good position, it must be moved
  * 

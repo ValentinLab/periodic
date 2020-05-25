@@ -174,6 +174,19 @@ void execute_one_command(struct command_list *cl) {
     int errput = open_m_control(errput_path, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     dup2_control(errput, 2);
 
+    // Remove handler
+    struct sigaction action;
+    sigemptyset(&action.sa_mask);
+    action.sa_handler = SIG_DFL;
+    action.sa_flags = 0;
+    sigaction(SIGUSR1, &action, NULL);
+    sigaction(SIGUSR2, &action, NULL);
+    sigaction(SIGALRM, &action, NULL);
+    sigaction(SIGCHLD, &action, NULL);
+    sigaction(SIGINT, &action, NULL);
+    sigaction(SIGQUIT, &action, NULL);
+    sigaction(SIGTERM, &action, NULL);
+
     // Execution
     execvp(cl->data->cmd_name, cl->data->cmd_args);
 
@@ -238,6 +251,9 @@ int main(int argc, char **argv) {
   int fifo = create_fifo();
   create_directory();
 
+  // Register the exit function
+  atexit(exit_period);
+
   // Command number
   int last_insert_no = 1;
 
@@ -256,9 +272,6 @@ int main(int argc, char **argv) {
 
   // Create list of commands
   struct command_list *all_cmds = NULL;
-
-  // Register the exit function
-  atexit(exit_period);
 
   // Pause until signals
   while(on_progress) {

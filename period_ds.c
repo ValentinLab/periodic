@@ -71,15 +71,6 @@ struct command_list *command_list_remove(struct command_list *self, struct comma
     return NULL;
   }
 
-  if(self->next == NULL) {
-    if(command_cmp(self->data, data) == 0) {
-      command_destroy(data);
-      free(self);
-
-      return NULL;
-    }
-  }
-
   if(command_cmp(self->data, data) == 0) {
     command_destroy(data);
     struct command_list *tmp = self;
@@ -89,7 +80,7 @@ struct command_list *command_list_remove(struct command_list *self, struct comma
     return self;
   }
 
-  if(command_cmp(self->next->data, data) == 0) {
+  if(self->next != NULL && command_cmp(self->next->data, data) == 0) {
     command_destroy(data);
     struct command_list *tmp = self->next;
     self->next = self->next->next;
@@ -99,6 +90,41 @@ struct command_list *command_list_remove(struct command_list *self, struct comma
   }
 
   self->next = command_list_remove(self->next, data);
+  return self;
+}
+
+struct command_list *command_list_remove_by_nb(struct command_list *self, const int command_no) {
+  if(self == NULL) {
+    return NULL;
+  }
+
+  if(self->data->no == command_no) {
+    if(self->data->pid == 0) { // not in progress
+      command_destroy(self->data);
+      struct command_list *tmp = self;
+      self = tmp->next;
+      free(tmp);
+    } else { // execution in progress
+      self->data->period = 0;
+    }
+
+    return self;
+  }
+
+  if(self->next != NULL && self->next->data->no == command_no) {
+    if(self->data->pid == 0) { // not in execution
+      command_destroy(self->next->data);
+      struct command_list *tmp = self->next;
+      self->next = self->next->next;
+      free(tmp);
+    } else { // execution in progress
+      self->data->period = 0;
+    }
+
+    return self;
+  }
+
+  self->next = command_list_remove_by_nb(self->next, command_no);
   return self;
 }
 
