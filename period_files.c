@@ -10,6 +10,8 @@
 
 int file_exists(const char *pathname) {
   int ret = access(pathname, F_OK);
+  // Check returned value
+  // If errno == ENOENT, file does not exist
   if(ret == -1 && errno != ENOENT) {
     perror("Access file (access)");
     exit(EXIT_SYSCALL);
@@ -35,12 +37,12 @@ void write_pid() {
 }
 
 void output_redirections() {
-  // Stdout
+  // Stdout -> /tmp/period.out
   int fd = open_m_control("/tmp/period.out", O_WRONLY | O_CREAT, 0644);
   dup2_control(fd, 1);
   close_control(fd);
 
-  // Stderr
+  // Stderr -> /tmp/period.err
   fd = open_m_control("/tmp/period.err", O_WRONLY | O_CREAT, 0644);
   dup2_control(fd, 2);
   close_control(fd);
@@ -50,7 +52,7 @@ int create_fifo() {
   // Fifo pathname
   const char *fifo_pathname = "/tmp/period.fifo";
 
-  // Check if named pipe already exists, then create it
+  // Check if named pipe already exists, otherwise create it
   int exists = file_exists(fifo_pathname);
   if(exists != 0) {
     int ret = mkfifo(fifo_pathname, 0644);
