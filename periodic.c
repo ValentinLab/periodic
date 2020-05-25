@@ -47,7 +47,7 @@ int send_signal (int pid, int signal) {
 
 int main(int argc, char *argv[]) {
   if (argc != 1 && argc <= 3) {
-    fprintf(stderr,"invalid start\nusage : ./periodic start period cmd [args]...\nusage : ./periodic\n");
+    fprintf(stderr,"invalid arguments\nusage : ./periodic start period cmd [args]...\nusage : ./periodic\n");
     return EXIT_FAILURE;
   }
   
@@ -61,36 +61,58 @@ int main(int argc, char *argv[]) {
 
     perror_control(send_signal(pid, SIGUSR2), "Can't send SIGUSR2 (periodic)");
     send_string(fd, "0");
-    printf("Registred command :\n");
-    printf("N°|start|period|cmd|args\n");
     char **res = recv_argv(fd);
     
-    while (strcmp(res[0], "NULL") != 0) {
-      int i = 0;
-      while (res[i] != NULL) {
-        if(i == 0) {
-          printf("%s - ", res[i]);
-        } else {
-          printf("%s ", res[i]);
-        }
-        i++;
-      }
-      printf("\n");
+    if(strcmp(res[0], "NULL") == 0) {
+      printf("Il n'y a pas de commande.\n");
+      free(res[0]);
       free(res);
-      res = recv_argv(fd);
+    } else {
+      printf("Registred command :\n");
+      printf("N°|start|period|cmd|args\n");
+      while (strcmp(res[0], "NULL") != 0) {
+        int i = 0;
+        while (res[i] != NULL) {
+          if(i == 0) {
+            printf("%s - ", res[i]);
+          } else {
+            printf("%s ", res[i]);
+          }
+          free(res[i]);
+          i++;
+        }
+        printf("\n");
+        free(res);
+        res = recv_argv(fd);
+      }
     }
-    
-    close(fd);
+    close_control(fd);
   } else {  // Si il y a 3 arguments au moins
     perror_control(send_signal(pid, SIGUSR1), "Can't send SIGUSR1 (periodic)");
 
     int fd = open(NAMED_PIPE_PATH, O_WRONLY);
     perror_control(fd, "open named pipe (periodic)");
+
+    // Send argument size
     char numArg[12];
     sprintf(numArg, "%d", argc - 2);
+
+    if(strcmp(argv[1], "now") == 0 || strcmp(argv[1], "0") == 0) {
+      argv[0] = "0";
+    } else{
+      if(strtol(argv[1], NULL, 10) == 0) {
+        fprintf(stderr,"invalid start\nusage : ./periodic start period cmd [args]...\nusage : ./periodic\n");
+      }
+    }
+
+    if(strtol(argv[2], NULL, 10) == 0) {
+      fprintf(stderr,"invalid period\nusage : ./periodic start period cmd [args]...\nusage : ./periodic\n");
+    }
+
     send_string(fd, numArg);
     send_argv(fd, argv+1);
-    close(fd);
+
+    close_control(fd);
   }
 
   return EXIT_SUCCESS;
