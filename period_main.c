@@ -103,7 +103,7 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     current_cmd[2] = period;
     current_cmd[3] = cl->data->cmd_name;
     for(size_t i = 1; i < cl->data->arg_nb; ++i) {
-      current_cmd[4+i] = cl->data->cmd_args[i];
+      current_cmd[3+i] = cl->data->cmd_args[i];
     }
 
     send_argv(fifo_fd, current_cmd);
