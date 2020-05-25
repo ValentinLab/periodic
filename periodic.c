@@ -61,20 +61,25 @@ int main(int argc, char *argv[]) {
 
     perror_control(send_signal(pid, SIGUSR2), "Can't send SIGUSR2 (periodic)");
     send_string(fd, "0");
-    printf("Registred command : \n");
-    //char **res = recv_argv(fd);
-    //printf("res: %s\n", res[0]);
-    /*
-    while (!strcmp(res[0], "NULL")) {
+    printf("Registred command :\n");
+    printf("N°|start|period|cmd|args\n");
+    char **res = recv_argv(fd);
+    
+    while (strcmp(res[0], "NULL") != 0) {
       int i = 0;
       while (res[i] != NULL) {
-        printf("%s ", res[i]);
+        if(i == 0) {
+          printf("%s - ", res[i]);
+        } else {
+          printf("%s ", res[i]);
+        }
         i++;
       }
       printf("\n");
+      free(res);
       res = recv_argv(fd);
     }
-    */
+    
     close(fd);
   } else {  // Si il y a 3 arguments au moins
     perror_control(send_signal(pid, SIGUSR1), "Can't send SIGUSR1 (periodic)");
@@ -82,8 +87,8 @@ int main(int argc, char *argv[]) {
     int fd = open(NAMED_PIPE_PATH, O_WRONLY);
     perror_control(fd, "open named pipe (periodic)");
     char numArg[12];
-    // sprintf(numArg, "%d", argc - 4);
-    // send_string(fd, numArg);
+    sprintf(numArg, "%d", argc - 2);
+    send_string(fd, numArg);
     send_argv(fd, argv+1);
     close(fd);
   }
