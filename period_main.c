@@ -224,6 +224,11 @@ struct command_list *wait_child(struct command_list *cl) {
   return cl;
 }
 
+void exit_period() {
+  int ret = unlink("/tmp/period.pid");
+  perror_control(ret, "Suppression d'un fichier (unlink)");
+}
+
 /* ---------- Main ---------- */
 
 int main(int argc, char **argv) {
@@ -251,6 +256,9 @@ int main(int argc, char **argv) {
 
   // Create list of commands
   struct command_list *all_cmds = NULL;
+
+  // Register the exit function
+  atexit(exit_period);
 
   // Pause until signals
   while(on_progress) {
@@ -291,8 +299,6 @@ int main(int argc, char **argv) {
 
   // Fin du programme
   close_control(fifo);
-  int ret = unlink("/tmp/period.pid");
-  perror_control(ret, "Suppression d'un fichier (unlink)");
   command_list_destroy(all_cmds);
 
   return EXIT_SUCCESS;

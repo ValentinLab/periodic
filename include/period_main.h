@@ -60,6 +60,12 @@ void execute_one_command(struct command_list *cl);
  */
 struct command_list *wait_child();
 
+/**
+ * Function called at normal process termination
+ * Removes /tmp/period.pid"
+ */
+void exit_period();
+
 /* ---------- Main ---------- */
 
 int main(int argc, char **argv);
