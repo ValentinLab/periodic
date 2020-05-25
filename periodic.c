@@ -39,7 +39,7 @@ int read_pid(char *path) {
  */ 
 int send_signal (int pid, int signal) {
   int res = kill(pid, signal);
-  perror_control(res, "Can't kill (send_signal)");
+  perror_control(res, "can't kill (send_signal)");
   return res;
 }
 
@@ -52,6 +52,12 @@ long is_long(char *str, char *err) {
     exit(EXIT_FAILURE);
   }
   free(endptr);
+
+  if(result < 0) {
+    fprintf(stderr, "%s need to be superior or equal to zero\n%s", err, GENERIC_USAGE);
+    exit(EXIT_FAILURE);
+  }
+
   return result;
 }
 
@@ -63,17 +69,17 @@ int main(int argc, char *argv[]) {
   
   // Try to read the pid of period
   int pid = read_pid(PID_PATH);
-  perror_control(pid, "Can't read PID (periodic)");
+  perror_control(pid, "can't read PID (periodic)");
 
   if (argc == 1) { // Si il y a 0 argument
     int fd = open(NAMED_PIPE_PATH, O_RDWR);
     perror_control(fd, "open (periodic - 1)");
 
-    perror_control(send_signal(pid, SIGUSR2), "Can't send SIGUSR2 (periodic)");
+    perror_control(send_signal(pid, SIGUSR2), "can't send SIGUSR2 (periodic)");
     char **res = recv_argv(fd);
     
     if(strcmp(res[0], "NULL") == 0) {
-      printf("Il n'y a pas de commande.\n");
+      printf("List of command is empty.\n");
       free(res[0]);
       free(res);
     } else {
@@ -102,12 +108,7 @@ int main(int argc, char *argv[]) {
   } else if(argc == 2) { // Si il y a 1 argument
     long delete_num = is_long(argv[1], "cmd_number");
 
-    if(delete_num < 0) {
-      fprintf(stderr,"cmd_number need to be superior or equal to zero\n%s", GENERIC_USAGE);
-      exit(EXIT_FAILURE);
-    }
-
-    perror_control(send_signal(pid, SIGUSR1), "Can't send SIGUSR1 (periodic - 1)");
+    perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 1)");
 
     int fd = open(NAMED_PIPE_PATH, O_WRONLY);
     perror_control(fd, "open (periodic - 2)");
@@ -125,13 +126,14 @@ int main(int argc, char *argv[]) {
     } else{
       long start = is_long(argv[1], "start");
       time_t next_time = time(NULL) + start;
-      printf("%ld", next_time);
       sprintf(argv[1], "%ld", next_time);
     }
 
-    is_long(argv[2], "period");
+    long period = is_long(argv[2], "period");
 
-    perror_control(send_signal(pid, SIGUSR1), "Can't send SIGUSR1 (periodic - 2)");
+    sprintf(argv[2], "%ld", period);
+
+    perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 2)");
 
     int fd = open(NAMED_PIPE_PATH, O_WRONLY);
     perror_control(fd, "open (periodic - 3)");
