@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
     close_control(fd);
   } else {  // Si il y a 3 arguments au moins
     // Memory allocation for the new array
-    char **to_send = calloc(argc - 2, sizeof(char *));
+    char *to_send[argc - 2];
 
     // 1. Start
     time_t start_time = time(NULL);
@@ -173,23 +173,18 @@ int main(int argc, char *argv[]) {
     send_string(fd, numArg);
 
     // Send command datas
-    for(size_t i = 2; i < argc-1; ++i) {
-      fprintf(stderr, "%ld : %s\n", i, argv[i+1]);
-      to_send[i] = calloc(strlen(argv[i+1]), sizeof(char));
-      strcpy(to_send[i], argv[i+1]);
-      fprintf(stderr, "--\n");
+    for(size_t i = 2; i < argc; ++i) {
+      to_send[i] = argv[i+1];
     }
     send_argv(fd, to_send);
 
+    // Close pipe and free memory
     close_control(fd);
+    free(to_send[0]);
+    free(to_send[1]);
 
     // Send SIGUSR1 to period
     perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 2)");
-
-    // Free memory
-    free(to_send[0]);
-    free(to_send[1]);
-    free(to_send);
   }
 
   return EXIT_SUCCESS;
