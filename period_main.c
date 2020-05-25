@@ -288,8 +288,17 @@ int main(int argc, char **argv) {
     }
     // SIGUSR2
     if(usr2_receive == 1) {
-      // Send commands
-      send_all_commands(fifo, all_cmds);
+      char *value_str = recv_string(fifo);
+      int value = atoi(value_str);
+      free(value_str);
+
+      if(value <= 0) {
+        // Send all registred commands
+        send_all_commands(fifo, all_cmds);
+      } else {
+        // Remove the command no value
+        all_cmds = command_list_remove_by_nb(all_cmds, value);
+      }
     }
     // SIGALRM
     if(alrm_receive == 1) {

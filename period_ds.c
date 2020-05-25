@@ -21,6 +21,9 @@ void command_dump(const struct command *self) {
 }
 
 int command_cmp(const struct command *one, const struct command *two) {
+  assert(one != NULL);
+  assert(two != NULL);
+
   int cmd = strcmp(one->cmd_name, two->cmd_name);
   int start = one->start - two->start;
   int period = one->period - two->period;
@@ -38,6 +41,8 @@ int command_cmp(const struct command *one, const struct command *two) {
 }
 
 void command_destroy(struct command *self) {
+  assert(self != NULL);
+
   // Free datas
   free(self->cmd_name);
   for(size_t i = 1; i < self->arg_nb; ++i) {
@@ -67,6 +72,8 @@ struct command_list *command_list_add(struct command_list *self, struct command 
 }
 
 struct command_list *command_list_remove(struct command_list *self, struct command *data) {
+  assert(data != NULL);
+
   if(self == NULL) {
     return NULL;
   }
@@ -94,6 +101,8 @@ struct command_list *command_list_remove(struct command_list *self, struct comma
 }
 
 struct command_list *command_list_remove_by_nb(struct command_list *self, const int command_no) {
+  assert(command_no > 0);
+
   if(self == NULL) {
     return NULL;
   }
@@ -129,6 +138,10 @@ struct command_list *command_list_remove_by_nb(struct command_list *self, const 
 }
 
 struct command_list *command_list_replace(struct command_list *self) {
+  if(self == NULL) {
+    return NULL;
+  }
+
   struct command *current_data = self->data;
   struct command_list *tmp = self;
   self = self->next;
@@ -153,6 +166,7 @@ void command_list_destroy(struct command_list *self) {
     return;
   }
 
+  // Free memory
   command_list_destroy(self->next);
   command_destroy(self->data);
   free(self);
