@@ -53,14 +53,15 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, i
   // Set flag to 0
   usr1_receive = 0;
 
+  // Memory allocation for the new command
   struct command *cmd = malloc(sizeof(struct command));
 
-  // Get arguments number
+  // Get arguments number from the pipe
   char *arg_nb_str = recv_string(fifo_fd);
   cmd->arg_nb = atoi(arg_nb_str);
   free(arg_nb_str);
 
-  // Get datas
+  // Get datas from the pipe
   char **datas = recv_argv(fifo_fd);
  
   cmd->start = atol(datas[0]);
@@ -75,12 +76,12 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, i
   cmd->pid = 0;
   cmd->no = no;
 
-  // Free memory
+  // Free memory of string transformed into numbers
   free(datas[0]);
   free(datas[1]);
   free(datas);
 
-  // Add command to the list
+  // Add the command to the list
   cl = command_list_add(cl, cmd);
   return cl;
 }
@@ -88,6 +89,8 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, i
 void send_all_commands(int fifo_fd, struct command_list *cl) {
   // Send commands
   while(cl != NULL) {
+    char no_command[11];
+    sprintf(no_command, "%d", cl->data->no);
     char start[20];
     sprintf(start, "%ld", cl->data->start);
     char period[11];
@@ -95,14 +98,15 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     char arg_nb[11];
     sprintf(arg_nb, "%d", cl->data->arg_nb);
 
-    char **current_cmd = calloc(4 + cl->data->arg_nb, sizeof(char *));
+    char **current_cmd = calloc(5 + cl->data->arg_nb, sizeof(char *));
 
-    current_cmd[0] = start;
-    current_cmd[1] = period;
-    current_cmd[2] = cl->data->cmd_name;
-    current_cmd[3] = arg_nb;
+    current_cmd[0] = no_command;
+    current_cmd[1] = start;
+    current_cmd[2] = period;
+    current_cmd[3] = cl->data->cmd_name;
+    current_cmd[4] = arg_nb;
     for(size_t i = 0; i < cl->data->arg_nb; ++i) {
-      current_cmd[4+i] = cl->data->cmd_args[i];
+      current_cmd[5+i] = cl->data->cmd_args[i];
     }
 
     send_argv(fifo_fd, current_cmd);
@@ -238,16 +242,21 @@ struct command_list *wait_child(struct command_list *cl) {
 }
 
 void kill_children(struct command_list *cl) {
+  // Kill every children currently running
   int ret = 0;
-  while(cl != NULL) {
-    if(cl->data->pid != 0) {
-      ret = kill(cl->data->pid, SIGTERM);
+  struct command_list *current = cl;
+  while(current != NULL) {
+    if(current->data->pid != 0) {
+      ret = kill(current->data->pid, SIGTERM);
       if(ret == -1) {
         perror("Kill child for period termination (kill)");
       }
     }
-    cl = cl->next;
+    current = current->next;
   }
+
+  // Wait for them
+  cl = wait_child(cl);
 }
 
 void exit_period() {
@@ -286,11 +295,11 @@ int main(int argc, char **argv) {
   // Create list of commands
   struct command_list *all_cmds = NULL;
 
-  // Pause until signals
+  // Wait for a signal
   while(on_progress) {
     pause();
 
-    // SIGUSR1
+    // SIGUSR1 -> receiving a new command
     if(usr1_receive == 1) {
       // Get command
       all_cmds = receive_new_command(fifo, all_cmds, last_insert_no);
@@ -299,7 +308,7 @@ int main(int argc, char **argv) {
       // Set alarm
       get_next_command(all_cmds);
     }
-    // SIGUSR2
+    // SIGUSR2 -> must send all registrated commands or remove one from the list
     if(usr2_receive == 1) {
       char *value_str = recv_string(fifo);
       int value = atoi(value_str);
@@ -313,26 +322,26 @@ int main(int argc, char **argv) {
         all_cmds = command_list_remove_by_nb(all_cmds, value);
       }
     }
-    // SIGALRM
+    // SIGALRM -> must execute command(s)
     if(alrm_receive == 1) {
       // Set flag to 0
       alrm_receive = 0;
 
-      // Execute command
+      // Execute commands
       all_cmds = exec_commands(all_cmds);
       get_next_command(all_cmds);
     }
-    // SIGCHLD
+    // SIGCHLD -> termination of a child
     if(chld_receive == 1) {
       // Set flag to 0
       chld_receive = 0;
 
-      // Wait child
+      // Wait for child or children
       all_cmds = wait_child(all_cmds);
     }
   }
 
-  // Fin du programme
+  // Period exit
   close_control(fifo);
   kill_children(all_cmds);
   command_list_destroy(all_cmds);
