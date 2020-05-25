@@ -307,7 +307,7 @@ int main(int argc, char **argv) {
       int value = atoi(value_str);
       free(value_str);
 
-      if(value == 0) {
+      if(value <= 0) {
         // Get command
         all_cmds = receive_new_command(fifo, all_cmds, last_insert_no);
         ++last_insert_no;
@@ -319,7 +319,7 @@ int main(int argc, char **argv) {
         all_cmds = command_list_remove_by_nb(all_cmds, value);
       }
     }
-    // SIGUSR2 -> must send all registrated commands
+    // SIGUSR2 -> must send all registrated commands or remove one from the list
     if(usr2_receive == 1) {
       // Send all registred commands
       send_all_commands(fifo, all_cmds);
