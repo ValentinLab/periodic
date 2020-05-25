@@ -303,26 +303,26 @@ int main(int argc, char **argv) {
 
     // SIGUSR1 -> receiving a new command
     if(usr1_receive == 1) {
-      // Get command
-      all_cmds = receive_new_command(fifo, all_cmds, last_insert_no);
-      ++last_insert_no;
-
-      // Set alarm
-      get_next_command(all_cmds);
-    }
-    // SIGUSR2 -> must send all registrated commands or remove one from the list
-    if(usr2_receive == 1) {
       char *value_str = recv_string(fifo);
       int value = atoi(value_str);
       free(value_str);
 
       if(value <= 0) {
-        // Send all registred commands
-        send_all_commands(fifo, all_cmds);
+        // Get command
+        all_cmds = receive_new_command(fifo, all_cmds, last_insert_no);
+        ++last_insert_no;
+
+        // Set alarm
+        get_next_command(all_cmds);
       } else {
         // Remove the command no value
         all_cmds = command_list_remove_by_nb(all_cmds, value);
       }
+    }
+    // SIGUSR2 -> must send all registrated commands or remove one from the list
+    if(usr2_receive == 1) {
+      // Send all registred commands
+      send_all_commands(fifo, all_cmds);
     }
     // SIGALRM -> must execute command(s)
     if(alrm_receive == 1) {
