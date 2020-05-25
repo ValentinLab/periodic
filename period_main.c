@@ -50,18 +50,15 @@ void handler(int sig) {
 /* ---------- Functions ---------- */
 
 struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, int no) {
-  // Set flag to 0
-  usr1_receive = 0;
-
   // Memory allocation for the new command
   struct command *cmd = malloc(sizeof(struct command));
 
-  // Get arguments number from the pipe
+  // Get arguments number
   char *arg_nb_str = recv_string(fifo_fd);
   cmd->arg_nb = atoi(arg_nb_str);
   free(arg_nb_str);
 
-  // Get datas from the pipe
+  // Get datas from periodic
   char **datas = recv_argv(fifo_fd);
  
   cmd->start = atol(datas[0]);
@@ -76,14 +73,12 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, i
   cmd->pid = 0;
   cmd->no = no;
 
-  fprintf(stderr, "%ld - %d - %s", cmd->start, cmd->period, cmd->cmd_name);
-
   // Free memory of string transformed into numbers
   free(datas[0]);
   free(datas[1]);
   free(datas);
 
-  // Add the command to the list
+  // Add the new command to the list
   cl = command_list_add(cl, cmd);
   return cl;
 }
@@ -91,6 +86,7 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, i
 void send_all_commands(int fifo_fd, struct command_list *cl) {
   // Send commands
   while(cl != NULL) {
+    // Transform numbers into strings
     char no_command[11];
     sprintf(no_command, "%d", cl->data->no);
     char start[20];
@@ -100,8 +96,8 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     char arg_nb[11];
     sprintf(arg_nb, "%d", cl->data->arg_nb-2);
 
+    // Create the array to send
     char **current_cmd = calloc(5 + cl->data->arg_nb-1, sizeof(char *));
-
     current_cmd[0] = no_command;
     current_cmd[1] = start;
     current_cmd[2] = period;
@@ -117,6 +113,7 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
   }
 
   // Stop sending
+  // Sending an array with the string "NULL"
   char *final_sending[2];
   final_sending[0] = "NULL";
   final_sending[1] = NULL;
@@ -128,12 +125,13 @@ void get_next_command(struct command_list *cl) {
   time_t now = time(NULL);
   perror_control(now, "Get time (time)");
 
-  // Check data structure
+  // Exit function if list is empty
   if(cl == NULL) {
     return;
   }
 
-  // Set alarm
+  // Set alarm for the next execution
+  // The next command is always the first element of the list
   unsigned int alarm_time = cl->data->next_exec - now;
   if(alarm_time == 0) {
     alrm_receive = 1;
@@ -264,6 +262,7 @@ void kill_children(struct command_list *cl) {
 }
 
 void exit_period() {
+  // Remove pid file
   int ret = unlink("/tmp/period.pid");
   perror_control(ret, "Suppression d'un fichier (unlink)");
 }
@@ -284,6 +283,7 @@ int main(int argc, char **argv) {
   int last_insert_no = 1;
 
   // Handler installation
+  // Used for : SIGUSR1, SIGUSR2, SIGALRM, SIGCHLD, SIGINT, SIGQUIT, SIGTERM
   struct sigaction action;
   sigemptyset(&action.sa_mask);
   action.sa_handler = handler;
@@ -296,34 +296,36 @@ int main(int argc, char **argv) {
   sigaction(SIGQUIT, &action, NULL);
   sigaction(SIGTERM, &action, NULL);
 
-  // Create list of commands
+  // Create the list of commands
   struct command_list *all_cmds = NULL;
 
   // Wait for a signal
   while(on_progress) {
     pause();
 
-    // SIGUSR1 -> receiving a new command or must remove one from the list
+    // SIGUSR1 -> add a new command to the list or must remove one from the list
     if(usr1_receive == 1) {
+      // Set flag to 0
+      usr1_receive = 0;
+
+      // Get the value from periodic
       char *value_str = recv_string(fifo);
       int value = atoi(value_str);
       free(value_str);
 
-      if(value <= 0) {
+      if(value <= 0) { // add command
         // Get command
         all_cmds = receive_new_command(fifo, all_cmds, last_insert_no);
         ++last_insert_no;
 
-        // Set alarm
+        // Set alarm for the next execution
         get_next_command(all_cmds);
-      } else {
-        // Remove a command
+      } else { // remove command (number 'value')
         all_cmds = command_list_remove_by_nb(all_cmds, value);
       }
     }
-    // SIGUSR2 -> must send all registrated commands or remove one from the list
+    // SIGUSR2 -> must send all registrated commands to periodic
     if(usr2_receive == 1) {
-      // Send all registred commands
       send_all_commands(fifo, all_cmds);
     }
     // SIGALRM -> must execute command(s)
@@ -346,6 +348,7 @@ int main(int argc, char **argv) {
   }
 
   // Period exit
+  // Close pipe, kill all children and free memory
   close_control(fifo);
   kill_children(all_cmds);
   command_list_destroy(all_cmds);
