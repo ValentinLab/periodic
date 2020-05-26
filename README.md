@@ -18,13 +18,15 @@ Pour lancer un daemon, il faut utiliser le prgramme `launch_daemon` sous la form
 Ensuite, un programme `periodic` permet de dialoguer avec `period` sous la forme `periodic start period cmd [arg]...`.
 Pour envoyer une commande, deux possibilités sont offertes à l'utilisateur. La première est la planification d'une tâche. 
 Par exemple, pour exécuter une seule fois une action irrémédiable dans 10 secondes, il suffit d'utiliser la commande 
-`periodic +10 0 rm -rf /* --no-preserve-root`. La deuxième est l'exécution d'une tâche à fréquence régulière. Par
-exemple `periodic now 15 echo hello (again)` permettra d'exécuter `echo` maintenant puis toutes les 15 secondes.
+`periodic +10 0 kill -TERM $(pidof period)`. La deuxième est l'exécution d'une tâche à fréquence régulière. Par
+exemple `periodic now 15 echo 'hello (again)'` permettra d'exécuter `echo` maintenant puis toutes les 15 secondes.
+
+En plus de cela, nous avons implémenté le bonus. L'utilisateur a la possibilité de supprimer une commande qu'il a 
+enregistré. Pour cela, il lui suffit de saisir `periodic X` ou X correspond au numéro de la commande.
 
 ## Améliorations possibles
 
-Nous pourrions ajouter la possibilité de supprimer une commande enregistrée comme proposé dans le sujet. Nous ne l'avons
-pas fait, faute de temps.
+Nous n'avons pas pensé à des améliorations autres que le bonus proposé dans le sujet.
 
 ## Travail en binôme
 
