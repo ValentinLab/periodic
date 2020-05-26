@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     // -> 0 argument : list all registrated commands
 
     // Open the pipe
-    int fd = open(NAMED_PIPE_PATH, O_RDWR);
+    int fd = open(NAMED_PIPE_PATH, O_RDONLY);
     perror_control(fd, "open (periodic - 1)");
 
     // Send SIGURS2 to period

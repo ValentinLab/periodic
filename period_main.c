@@ -329,6 +329,7 @@ int main(int argc, char **argv) {
     }
     // SIGUSR2 -> must send all registrated commands to periodic
     if(usr2_receive == 1) {
+      usr2_receive = 0;
       send_all_commands(fifo, all_cmds);
     }
     // SIGALRM -> must execute command(s)
