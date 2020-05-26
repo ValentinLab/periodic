@@ -54,9 +54,10 @@ int send_signal (int pid, int signal) {
  * 
  * @param str String to check
  * @param err Error to display
+ * @param min Minimum possible value
  * @return Str transformed into a long
  */
-long is_long(char *str, char *err) {
+long is_long(char *str, char *err, int min) {
   char **endptr = calloc(strlen(str), sizeof(char *));
   long result = strtol(str, endptr, 10);
   if(strcmp(*endptr, "\0") != 0) {
@@ -65,8 +66,8 @@ long is_long(char *str, char *err) {
   }
   free(endptr);
 
-  if(result < 0) {
-    fprintf(stderr, "%s need to be superior or equal to zero\n%s", err, GENERIC_USAGE);
+  if(result < min) {
+    fprintf(stderr, "Error : %s need to be superior or equal to %d\n%s", err, min, GENERIC_USAGE);
     exit(EXIT_FAILURE);
   }
 
@@ -90,7 +91,7 @@ int main(int argc, char *argv[]) {
   if (argc == 1) {
     // -> 0 argument : list all registrated commands
 
-    // Open pipe
+    // Open the pipe
     int fd = open(NAMED_PIPE_PATH, O_RDWR);
     perror_control(fd, "open (periodic - 1)");
 
@@ -129,29 +130,46 @@ int main(int argc, char *argv[]) {
       free(res);
     }
     close_control(fd);
-  } else if(argc == 2) { // Si il y a 1 argument
-    long delete_num = is_long(argv[1], "cmd_number");
+  } else if(argc == 2) {
+    // -> 1 argument : remove a command
 
-    perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 1)");
+    // Get the number of the targeted command
+    long delete_num = is_long(argv[1], "cmd_number", 1);
 
+    // Open the pipe
     int fd = open(NAMED_PIPE_PATH, O_WRONLY);
     perror_control(fd, "open (periodic - 2)");
 
-    // Define the period in delete mod
+    // Send SIGUSR1 to period
+    perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 1)");
+
+    // Set period in "delete mod"
     send_string(fd, "1");
     sprintf(argv[1],"%ld",delete_num);
-    // Send the cmd num that need to be deleted
+    // Send the command num to period
     send_string(fd, argv[1]);
     close_control(fd);
-  } else {  // Si il y a 3 arguments au moins
-    // Memory allocation for the new array
+  } else {
+    // -> 3 arguments : add a new command
+
+    // Open pipe
+    int fd = open(NAMED_PIPE_PATH, O_WRONLY);
+    perror_control(fd, "open (periodic - 3)");
+
+    // Send SIGUSR1 to period
+    perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 2)");
+
+    // Set period to "add mod"
+    send_string(fd, "0");
+
+    // Array for the new command
     char *to_send[argc - 2];
 
     // 1. Start
     time_t start_time = time(NULL);
     perror_control(start_time, "Get current time (time)");
     if(strcmp(argv[1], "now") != 0) {
-      long start = is_long(argv[1], "start");
+      long start = is_long(argv[1], "start", 0);
       if(argv[1][0] == '+') {
         start_time += start;
       } else {
@@ -166,16 +184,9 @@ int main(int argc, char *argv[]) {
     sprintf(to_send[0], "%ld", start_time);
 
     // 2. Period
-    long period = is_long(argv[2], "period");
+    long period = is_long(argv[2], "period", 0);
     to_send[1] = calloc(20, sizeof(char));
     sprintf(to_send[1], "%ld", period);
-
-    // Open pipe
-    int fd = open(NAMED_PIPE_PATH, O_WRONLY);
-    perror_control(fd, "open (periodic - 3)");
-
-    // Define period to "add mod"
-    send_string(fd, "0");
 
     // Send arguments number
     char numArg[12];
@@ -192,9 +203,6 @@ int main(int argc, char *argv[]) {
     close_control(fd);
     free(to_send[0]);
     free(to_send[1]);
-
-    // Send SIGUSR1 to period
-    perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 2)");
   }
 
   return EXIT_SUCCESS;
