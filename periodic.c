@@ -62,6 +62,7 @@ long is_long(char *str, char *err, int min) {
   long result = strtol(str, endptr, 10);
   if(strcmp(*endptr, "\0") != 0) {
     free(endptr);
+    fprintf(stderr, "Error : %s must be a number\n%s", err, GENERIC_USAGE);
     exit(EXIT_FAILURE);
   }
   free(endptr);
@@ -105,7 +106,7 @@ int main(int argc, char *argv[]) {
       free(res);
     } else { // one or more commands
       printf("List of regitrated commands :\n\n");
-      printf(" N° |    start    | period | cmd | args\n");
+      printf(" N° |    start    | period | cmd & args\n");
       while (res[0] != NULL) {
         int no = atoi(res[0]);
         free(res[0]);
@@ -153,12 +154,6 @@ int main(int argc, char *argv[]) {
     int fd = open(NAMED_PIPE_PATH, O_WRONLY);
     perror_control(fd, "open (periodic - 3)");
 
-    // Send SIGUSR1 to period
-    perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 2)");
-
-    // Set period to "add mod"
-    perror_control(send_string(fd, "0"), "can't send string (periodic - 3)");
-
     // Array for the new command
     char *to_send[argc - 2];
 
@@ -171,7 +166,7 @@ int main(int argc, char *argv[]) {
         start_time += start;
       } else {
         if(start < start_time) {
-          fprintf(stderr, "Error : you can't use past time\n");
+          fprintf(stderr, "Error : you can't use past time\n%s", GENERIC_USAGE);
           return EXIT_FAILURE;
         }
         start_time = start;
@@ -184,6 +179,12 @@ int main(int argc, char *argv[]) {
     long period = is_long(argv[2], "period", 0);
     to_send[1] = calloc(20, sizeof(char));
     sprintf(to_send[1], "%ld", period);
+
+    // Send SIGUSR1 to period
+    perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 2)");
+
+    // Set period to "add mod"
+    perror_control(send_string(fd, "0"), "can't send string (periodic - 3)");
 
     // Send arguments number
     char numArg[12];

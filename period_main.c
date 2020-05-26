@@ -73,9 +73,6 @@ struct command_list *receive_new_command(int fifo_fd, struct command_list *cl, i
   cmd->pid = 0;
   cmd->no = no;
 
-  // ----> DEBUG
-  fprintf(stderr, "%d - %ld %d %s\n", cmd->no, cmd->start, cmd->period, cmd->cmd_name);
-
   // Free memory of string transformed into numbers
   free(datas[0]);
   free(datas[1]);
@@ -108,6 +105,9 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
     }
 
     send_argv(fifo_fd, current_cmd);
+
+    // Free memory
+    free(current_cmd);
 
     cl = cl->next;
   }
@@ -275,7 +275,7 @@ void exit_period() {
 int main(int argc, char **argv) {
   // Save PID in a file, create a named pipe and a period directory
   write_pid();
-  // output_redirections();
+  output_redirections();
   int fifo = create_fifo();
   create_directory();
 
@@ -323,8 +323,13 @@ int main(int argc, char **argv) {
 
         // Set alarm for the next execution
         get_next_command(all_cmds);
-      } else { // remove command (number 'value')
-        all_cmds = command_list_remove_by_nb(all_cmds, value);
+      } else { // remove command
+        // Get the number of the targeted command
+        char *no_str = recv_string(fifo);
+        int no = atoi(no_str);
+        free(no_str);
+
+        all_cmds = command_list_remove_by_nb(all_cmds, no);
       }
     }
     // SIGUSR2 -> must send all registrated commands to periodic
