@@ -100,14 +100,13 @@ int main(int argc, char *argv[]) {
     char **res = recv_argv(fd);
 
     // Print commands
-    printf("List of regitrated commands :\n\n");
-    if(strcmp(res[0], "NULL") == 0) { // 0 commands
+    if(res[0] == NULL) { // 0 commands
       printf("Nothing to print.\n");
-      free(res[0]);
       free(res);
     } else { // one or more commands
-      printf(" N° |    start    | period | cmd\n");
-      while (strcmp(res[0], "NULL") != 0) {
+      printf("List of regitrated commands :\n\n");
+      printf(" N° |    start    | period | cmd | args\n");
+      while (res[0] != NULL) {
         int no = atoi(res[0]);
         free(res[0]);
         int start = atol(res[1]);
@@ -121,12 +120,10 @@ int main(int argc, char *argv[]) {
           free(res[i]);
           i++;
         }
-        free(res[i]);
         free(res);
         printf("\n");
         res = recv_argv(fd);
       }
-      free(res[0]);
       free(res);
     }
     close_control(fd);
@@ -144,10 +141,10 @@ int main(int argc, char *argv[]) {
     perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 1)");
 
     // Set period in "delete mod"
-    send_string(fd, "1");
+    perror_control(send_string(fd, "1"), "can't send string (periodic - 1)");
     sprintf(argv[1],"%ld",delete_num);
     // Send the command num to period
-    send_string(fd, argv[1]);
+    perror_control(send_string(fd, argv[1]), "can't send string (periodic - 2)");
     close_control(fd);
   } else {
     // -> 3 arguments : add a new command
@@ -160,7 +157,7 @@ int main(int argc, char *argv[]) {
     perror_control(send_signal(pid, SIGUSR1), "can't send SIGUSR1 (periodic - 2)");
 
     // Set period to "add mod"
-    send_string(fd, "0");
+    perror_control(send_string(fd, "0"), "can't send string (periodic - 3)");
 
     // Array for the new command
     char *to_send[argc - 2];
@@ -191,13 +188,13 @@ int main(int argc, char *argv[]) {
     // Send arguments number
     char numArg[12];
     sprintf(numArg, "%d", argc - 2);
-    send_string(fd, numArg);
+    perror_control(send_string(fd, numArg), "send_string (periodic - 4)");
 
     // Send command datas
     for(size_t i = 2; i < argc; ++i) {
       to_send[i] = argv[i+1];
     }
-    send_argv(fd, to_send);
+    perror_control(send_argv(fd, to_send), "send_argv (periodic - 1)");
 
     // Close pipe and free memory
     close_control(fd);

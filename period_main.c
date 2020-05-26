@@ -114,9 +114,7 @@ void send_all_commands(int fifo_fd, struct command_list *cl) {
 
   // Stop sending
   // Sending an array with the string "NULL"
-  char *final_sending[2];
-  final_sending[0] = "NULL";
-  final_sending[1] = NULL;
+  char *final_sending[1] = {NULL};
   send_argv(fifo_fd, final_sending);
 }
 
