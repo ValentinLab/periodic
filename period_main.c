@@ -200,7 +200,7 @@ void execute_one_command(struct command_list *cl) {
     execvp(cl->data->cmd_name, cl->data->cmd_args);
 
     perror("Execute command (execvp)");
-    exit(EXIT_SYSCALL);
+    _exit(EXIT_SYSCALL);
   }
 
   // Change datas
@@ -222,6 +222,10 @@ struct command_list *wait_child(struct command_list *cl) {
     if(pid == -1) {
       perror("Wait child (waitpid)");
       exit(EXIT_SYSCALL);
+    }
+    if(pid == 0) {
+      current = current->next;
+      continue;
     }
     current->data->pid = 0;
 
