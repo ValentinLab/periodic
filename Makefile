@@ -1,34 +1,49 @@
+# Compilation
 CC=gcc
 CFLAGS=-std=c99 -Wall -g -I include/
 LDFLAGS=-g
 LDLIBS=-L lib/ -l controlsyscall -l message
+
+# Directories and files
 BIN_DIR=bin/
 LIB_DIR=lib/
-LIB=$(LIB_DIR)libcontrolsyscall.so $(LIB_DIR)libmessage.so
-TARGETS=$(BIN_DIR)now $(BIN_DIR)when $(BIN_DIR)period $(BIN_DIR)periodic $(BIN_DIR)launch_daemon
+LIB_H=include/controlsyscall.h include/message.h
 
-all: $(TARGETS)
+# Targets
+LIBS=$(LIB_DIR)libcontrolsyscall.so $(LIB_DIR)libmessage.so
+TOOLS=$(BIN_DIR)now $(BIN_DIR)when $(BIN_DIR)period $(BIN_DIR)periodic $(BIN_DIR)launch_daemon
+
+# Macro
+MKDIR_BIN=mkdir -p bin
+
+.PHONY: all
+all: $(LIBS) $(TOOLS)
 
 # ----- FILES -----
 
 # now
-$(BIN_DIR)now: now.o $(LIB)
+$(BIN_DIR)now: now.o $(LIB_H)
+	@$(MKDIR_BIN)
 	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
 
 # when
-$(BIN_DIR)when: when.o $(LIB)
+$(BIN_DIR)when: when.o $(LIB_H)
+	@$(MKDIR_BIN)
 	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
 
 # period
-$(BIN_DIR)period: period_main.o period_ds.o period_files.o $(LIB)
+$(BIN_DIR)period: period_main.o period_ds.o period_files.o $(LIB_H)
+	@$(MKDIR_BIN)
 	$(CC) $(LDFLAGS) -o $@ period_main.o period_ds.o period_files.o $(LDLIBS)
 
 # periodic
-$(BIN_DIR)periodic: periodic.o $(LIB)
+$(BIN_DIR)periodic: periodic.o $(LIB_H)
+	@$(MKDIR_BIN)
 	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
 
 #launch_daemon
-$(BIN_DIR)launch_daemon: launch_daemon.o $(LIB)
+$(BIN_DIR)launch_daemon: launch_daemon.o $(LIB_H)
+	@$(MKDIR_BIN)
 	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
 
 %.o: %.c
@@ -38,7 +53,7 @@ $(BIN_DIR)launch_daemon: launch_daemon.o $(LIB)
 
 # libmessage.so
 $(LIB_DIR)libmessage.so: $(LIB_DIR)src/message.o
-	$(CC) $(LDFLAGS) -shared -o $@ $<
+	$(CC) $(LDFLAGS) -shared -o $@ $< -L lib/ -l controlsyscall
 
 # libcontrolsyscall.so
 $(LIB_DIR)libcontrolsyscall.so: $(LIB_DIR)src/controlsyscall.o
@@ -46,7 +61,6 @@ $(LIB_DIR)libcontrolsyscall.so: $(LIB_DIR)src/controlsyscall.o
 
 $(LIB_DIR)src/%.o: $(LIB_DIR)src/%.c include/%.h
 	$(CC) $(CFLAGS) -c -fPIC -o $@ $<
-
 
 # ----- HOUSE CLEANING -----
 
